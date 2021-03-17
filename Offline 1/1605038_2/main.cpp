@@ -3,7 +3,7 @@
 #include<math.h>
 
 #include <windows.h>
-#include <glut.h>
+#include <GL/glut.h>
 
 #define pi (2*acos(0.0))
 
@@ -12,6 +12,11 @@ double cameraAngle;
 int drawgrid;
 int drawaxes;
 double angle;
+double bubbleSpeed;
+double bubbleHighestSpeed;
+double bubbleLowestSpeed;
+bool bubbleMoving;
+double saveBubbleSpeed;
 
 struct point
 {
@@ -78,7 +83,7 @@ void drawCircle(double radius,int segments)
 {
     int i;
     struct point points[100];
-    glColor3f(0.7,0.7,0.7);
+    //glColor3f(0.7,0.7,0.7);
     //generate points
     for(i=0;i<=segments;i++)
     {
@@ -126,7 +131,23 @@ void drawCone(double radius,double height,int segments)
     }
 }
 
-
+void drawBoundary(double a)
+{
+    glBegin(GL_LINES);
+    {
+        glVertex3f( a, a,2);
+        glVertex3f( a,-a,2);
+        glVertex3f(-a,-a,2);
+		glVertex3f(-a, a,2);
+    }glEnd();
+     glBegin(GL_LINES);
+    {
+        glVertex3f( a, a,2);
+        glVertex3f( -a,a,2);
+        glVertex3f(-a,-a,2);
+		glVertex3f(a, -a,2);
+    }glEnd();
+}
 void drawSphere(double radius,int slices,int stacks)
 {
 	struct point points[100][100];
@@ -198,8 +219,15 @@ void drawSS()
 void keyboardListener(unsigned char key, int x,int y){
 	switch(key){
 
-		case '1':
-			drawgrid=1-drawgrid;
+		case 'p':
+			if(bubbleMoving){
+                bubbleMoving = false;
+                saveBubbleSpeed = bubbleSpeed;
+                bubbleSpeed = 0;
+			} else {
+			    bubbleMoving = true;
+                bubbleSpeed = saveBubbleSpeed;
+			}
 			break;
 
 		default:
@@ -211,13 +239,17 @@ void keyboardListener(unsigned char key, int x,int y){
 void specialKeyListener(int key, int x,int y){
 	switch(key){
 		case GLUT_KEY_DOWN:		//down arrow key
-			cameraHeight -= 3.0;
+			if (bubbleSpeed - 0.02 >= bubbleLowestSpeed){
+                bubbleSpeed -= 0.02;
+			}
 			break;
 		case GLUT_KEY_UP:		// up arrow key
-			cameraHeight += 3.0;
+			if (bubbleSpeed + 0.02 <= bubbleHighestSpeed){
+                bubbleSpeed += 0.02;
+			}
 			break;
 
-		case GLUT_KEY_RIGHT:
+		/*case GLUT_KEY_RIGHT:
 			cameraAngle += 0.03;
 			break;
 		case GLUT_KEY_LEFT:
@@ -235,7 +267,7 @@ void specialKeyListener(int key, int x,int y){
 		case GLUT_KEY_HOME:
 			break;
 		case GLUT_KEY_END:
-			break;
+			break;*/
 
 		default:
 			break;
@@ -289,7 +321,7 @@ void display(){
 
 	//gluLookAt(100,100,100,	0,0,0,	0,0,1);
 	//gluLookAt(200*cos(cameraAngle), 200*sin(cameraAngle), cameraHeight,		0,0,0,		0,0,1);
-	gluLookAt(0,0,200,	0,0,0,	0,1,0);
+	gluLookAt(0,0,20,	0,0,0,	0,1,0);
 
 
 	//again select MODEL-VIEW
@@ -301,15 +333,18 @@ void display(){
 	****************************/
 	//add objects
 
-	drawAxes();
-	drawGrid();
+	//drawAxes();
+	//drawGrid();
 
-    //glColor3f(1,0,0);
-    //drawSquare(10);
 
-    drawSS();
+    glColor3f(0,1,0);
+    drawBoundary(10);
 
-    //drawCircle(30,24);
+    //drawSS();
+
+    glColor3f(1,0,0);
+    drawCircle(7, 50);
+
 
     //drawCone(20,50,24);
 
@@ -336,6 +371,11 @@ void init(){
 	cameraHeight=150.0;
 	cameraAngle=1.0;
 	angle=0;
+
+	bubbleSpeed = 6.0;
+	bubbleHighestSpeed = 10.0;
+	bubbleLowestSpeed = 3.0;
+	bubbleMoving = true;
 
 	//clear the screen
 	glClearColor(0,0,0,0);
