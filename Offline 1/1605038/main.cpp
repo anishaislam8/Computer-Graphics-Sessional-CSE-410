@@ -18,6 +18,19 @@ int drawgrid;
 int drawaxes;
 double angle;
 double rotationAngle;
+double currentZAngle;
+double currentYAngle;
+double currentXAngle;
+double currentYAngleCylinder;
+
+double qHighestRotation;
+double wHighestRotation;
+double eHighestRotation;
+double rHighestRotation;
+double aHighestRotation;
+double sHighestRotation;
+double dHighestRotation;
+double fHighestRotation;
 
 struct point
 {
@@ -29,9 +42,11 @@ struct point u;
 struct point r;
 struct point l;
 
-double degreeToradian(){
-    return (rotationAngle * pi)/180;
+double degreeToradian(double r){
+    return (r * pi)/180;
 }
+
+
 
 double valueOfAVector(point a){
     return sqrt(a.x*a.x + a.y*a.y + a.z*a.z);
@@ -56,16 +71,16 @@ void drawAxes()
 
 		glBegin(GL_LINES);{
 		    glColor3f(1,0,0);
-			glVertex3f( 100,0,0);
-			glVertex3f(-100,0,0);
+			glVertex3f( 300,0,0);
+			glVertex3f(-300,0,0);
 
             glColor3f(0,1,0);
-			glVertex3f(0,-100,0);
-			glVertex3f(0, 100,0);
+			glVertex3f(0,-300,0);
+			glVertex3f(0, 300,0);
 
 			glColor3f(0,0,1);
-			glVertex3f(0,0, 100);
-			glVertex3f(0,0,-100);
+			glVertex3f(0,0, 300);
+			glVertex3f(0,0,-300);
 		}glEnd();
 	}
 }
@@ -174,6 +189,7 @@ void drawUpperHemisphere(double radius,int slices,int stacks)
 			points[i][j].x=r*cos(((double)j/(double)slices)*2*pi);
 			points[i][j].y=r*sin(((double)j/(double)slices)*2*pi);
 			points[i][j].z=h;
+
 		}
 	}
 	//draw quads using generated points
@@ -216,6 +232,7 @@ void drawLowerHemisphere(double radius,int slices,int stacks)
 			points[i][j].x=r*cos(((double)j/(double)slices)*2*pi);
 			points[i][j].y=r*sin(((double)j/(double)slices)*2*pi);
 			points[i][j].z=h;
+
 		}
 	}
 	//draw quads using generated points
@@ -301,6 +318,8 @@ void drawCylinder(double radius,int slices,int stacks)
 			points[i][j].x=r*cos(((double)j/(double)slices)*2*pi);
 			points[i][j].y=r*sin(((double)j/(double)slices)*2*pi);
 			points[i][j].z=h;
+
+
 		}
 	}
 	//draw quads using generated points
@@ -344,6 +363,7 @@ void drawOuterCircle(double radius,int slices,int stacks)
 			points[i][j].x=r*cos(((double)j/(double)slices)*2*pi);
 			points[i][j].y=r*sin(((double)j/(double)slices)*2*pi);
 			points[i][j].z=h;
+
 		}
 	}
 	//draw quads using generated points
@@ -399,6 +419,9 @@ void drawSS()
 }
 
 void keyboardListener(unsigned char key, int x,int y){
+    double cosTheta = cos(degreeToradian(rotationAngle));
+    double sinTheta = sin(degreeToradian(rotationAngle));
+
 	switch(key){
 
 		case '1':
@@ -410,10 +433,11 @@ void keyboardListener(unsigned char key, int x,int y){
                 //lrot = lcos(rotationAngle) + (uxl)sin(rotationAngle)
                 point uCrossL = crossProduct(u,l);
 
+
                 point lRot;
-                lRot.x = l.x * cos(degreeToradian()) + uCrossL.x * sin(degreeToradian());
-                lRot.y = l.y * cos(degreeToradian()) + uCrossL.y * sin(degreeToradian());
-                lRot.z = l.z * cos(degreeToradian()) + uCrossL.z * sin(degreeToradian());
+                lRot.x = l.x * cosTheta + uCrossL.x * sinTheta;
+                lRot.y = l.y * cosTheta + uCrossL.y * sinTheta;
+                lRot.z = l.z * cosTheta + uCrossL.z * sinTheta;
 
                 double val = valueOfAVector(lRot);
                 lRot.x = lRot.x/val;
@@ -427,9 +451,9 @@ void keyboardListener(unsigned char key, int x,int y){
                 point uCrossR = crossProduct(u,r);
 
                 point rRot;
-                rRot.x = r.x * cos(degreeToradian()) + uCrossR.x * sin(degreeToradian());
-                rRot.y = r.y * cos(degreeToradian()) + uCrossR.y * sin(degreeToradian());
-                rRot.z = r.z * cos(degreeToradian()) + uCrossR.z * sin(degreeToradian());
+                rRot.x = r.x * cosTheta + uCrossR.x * sinTheta;
+                rRot.y = r.y * cosTheta + uCrossR.y * sinTheta;
+                rRot.z = r.z * cosTheta + uCrossR.z * sinTheta;
 
                 val = valueOfAVector(rRot);
                 rRot.x = rRot.x/val;
@@ -450,9 +474,9 @@ void keyboardListener(unsigned char key, int x,int y){
                 point uCrossL = crossProduct(u,l);
 
                 point lRot;
-                lRot.x = l.x * cos(degreeToradian()) - uCrossL.x * sin(degreeToradian());
-                lRot.y = l.y * cos(degreeToradian()) - uCrossL.y * sin(degreeToradian());
-                lRot.z = l.z * cos(degreeToradian()) - uCrossL.z * sin(degreeToradian());
+                lRot.x = l.x * cosTheta - uCrossL.x * sinTheta;
+                lRot.y = l.y * cosTheta - uCrossL.y * sinTheta;
+                lRot.z = l.z * cosTheta - uCrossL.z * sinTheta;
 
                 double val = valueOfAVector(lRot);
                 lRot.x = lRot.x/val;
@@ -466,9 +490,9 @@ void keyboardListener(unsigned char key, int x,int y){
                 point uCrossR = crossProduct(u,r);
 
                 point rRot;
-                rRot.x = r.x * cos(degreeToradian()) - uCrossR.x * sin(degreeToradian());
-                rRot.y = r.y * cos(degreeToradian()) - uCrossR.y * sin(degreeToradian());
-                rRot.z = r.z * cos(degreeToradian()) - uCrossR.z * sin(degreeToradian());
+                rRot.x = r.x * cosTheta - uCrossR.x * sinTheta;
+                rRot.y = r.y * cosTheta - uCrossR.y * sinTheta;
+                rRot.z = r.z * cosTheta - uCrossR.z * sinTheta;
 
                 val = valueOfAVector(rRot);
                 rRot.x = rRot.x/val;
@@ -488,9 +512,9 @@ void keyboardListener(unsigned char key, int x,int y){
                 point rCrossL = crossProduct(r,l);
 
                 point lRot;
-                lRot.x = l.x * cos(degreeToradian()) + rCrossL.x * sin(degreeToradian());
-                lRot.y = l.y * cos(degreeToradian()) + rCrossL.y * sin(degreeToradian());
-                lRot.z = l.z * cos(degreeToradian()) + rCrossL.z * sin(degreeToradian());
+                lRot.x = l.x * cosTheta + rCrossL.x * sinTheta;
+                lRot.y = l.y * cosTheta + rCrossL.y * sinTheta;
+                lRot.z = l.z * cosTheta + rCrossL.z * sinTheta;
 
                 double val = valueOfAVector(lRot);
                 lRot.x = lRot.x/val;
@@ -504,9 +528,9 @@ void keyboardListener(unsigned char key, int x,int y){
                 point rCrossU = crossProduct(r,u);
 
                 point uRot;
-                uRot.x = u.x * cos(degreeToradian()) + rCrossU.x * sin(degreeToradian());
-                uRot.y = u.y * cos(degreeToradian()) + rCrossU.y * sin(degreeToradian());
-                uRot.z = u.z * cos(degreeToradian()) + rCrossU.z * sin(degreeToradian());
+                uRot.x = u.x * cosTheta + rCrossU.x * sinTheta;
+                uRot.y = u.y * cosTheta + rCrossU.y * sinTheta;
+                uRot.z = u.z * cosTheta + rCrossU.z * sinTheta;
 
                 val = valueOfAVector(uRot);
                 uRot.x = uRot.x/val;
@@ -528,9 +552,9 @@ void keyboardListener(unsigned char key, int x,int y){
                 point rCrossL = crossProduct(r,l);
 
                 point lRot;
-                lRot.x = l.x * cos(degreeToradian()) - rCrossL.x * sin(degreeToradian());
-                lRot.y = l.y * cos(degreeToradian()) - rCrossL.y * sin(degreeToradian());
-                lRot.z = l.z * cos(degreeToradian()) - rCrossL.z * sin(degreeToradian());
+                lRot.x = l.x * cosTheta - rCrossL.x * sinTheta;
+                lRot.y = l.y * cosTheta - rCrossL.y * sinTheta;
+                lRot.z = l.z * cosTheta - rCrossL.z * sinTheta;
 
                 double val = valueOfAVector(lRot);
                 lRot.x = lRot.x/val;
@@ -544,9 +568,9 @@ void keyboardListener(unsigned char key, int x,int y){
                 point rCrossU = crossProduct(r,u);
 
                 point uRot;
-                uRot.x = u.x * cos(degreeToradian()) - rCrossU.x * sin(degreeToradian());
-                uRot.y = u.y * cos(degreeToradian()) - rCrossU.y * sin(degreeToradian());
-                uRot.z = u.z * cos(degreeToradian()) - rCrossU.z * sin(degreeToradian());
+                uRot.x = u.x * cosTheta - rCrossU.x * sinTheta;
+                uRot.y = u.y * cosTheta - rCrossU.y * sinTheta;
+                uRot.z = u.z * cosTheta - rCrossU.z * sinTheta;
 
                 val = valueOfAVector(uRot);
                 uRot.x = uRot.x/val;
@@ -566,9 +590,9 @@ void keyboardListener(unsigned char key, int x,int y){
                 point lCrossU = crossProduct(l,u);
 
                 point uRot;
-                uRot.x = u.x * cos(degreeToradian()) - lCrossU.x * sin(degreeToradian());
-                uRot.y = u.y * cos(degreeToradian()) - lCrossU.y * sin(degreeToradian());
-                uRot.z = u.z * cos(degreeToradian()) - lCrossU.z * sin(degreeToradian());
+                uRot.x = u.x * cosTheta - lCrossU.x * sinTheta;
+                uRot.y = u.y * cosTheta - lCrossU.y * sinTheta;
+                uRot.z = u.z * cosTheta - lCrossU.z * sinTheta;
 
                 double val = valueOfAVector(uRot);
                 uRot.x = uRot.x/val;
@@ -582,9 +606,9 @@ void keyboardListener(unsigned char key, int x,int y){
                 point lCrossR = crossProduct(l,r);
 
                 point rRot;
-                rRot.x = r.x * cos(degreeToradian()) - lCrossR.x * sin(degreeToradian());
-                rRot.y = r.y * cos(degreeToradian()) - lCrossR.y * sin(degreeToradian());
-                rRot.z = r.z * cos(degreeToradian()) - lCrossR.z * sin(degreeToradian());
+                rRot.x = r.x * cosTheta - lCrossR.x * sinTheta;
+                rRot.y = r.y * cosTheta - lCrossR.y * sinTheta;
+                rRot.z = r.z * cosTheta - lCrossR.z * sinTheta;
 
                 val = valueOfAVector(rRot);
                 rRot.x = rRot.x/val;
@@ -605,9 +629,9 @@ void keyboardListener(unsigned char key, int x,int y){
                 point lCrossU = crossProduct(l,u);
 
                 point uRot;
-                uRot.x = u.x * cos(degreeToradian()) + lCrossU.x * sin(degreeToradian());
-                uRot.y = u.y * cos(degreeToradian()) + lCrossU.y * sin(degreeToradian());
-                uRot.z = u.z * cos(degreeToradian()) + lCrossU.z * sin(degreeToradian());
+                uRot.x = u.x * cosTheta + lCrossU.x * sinTheta;
+                uRot.y = u.y * cosTheta + lCrossU.y * sinTheta;
+                uRot.z = u.z * cosTheta + lCrossU.z * sinTheta;
 
                 double val = valueOfAVector(uRot);
                 uRot.x = uRot.x/val;
@@ -621,9 +645,9 @@ void keyboardListener(unsigned char key, int x,int y){
                 point lCrossR = crossProduct(l,r);
 
                 point rRot;
-                rRot.x = r.x * cos(degreeToradian()) + lCrossR.x * sin(degreeToradian());
-                rRot.y = r.y * cos(degreeToradian()) + lCrossR.y * sin(degreeToradian());
-                rRot.z = r.z * cos(degreeToradian()) + lCrossR.z * sin(degreeToradian());
+                rRot.x = r.x * cosTheta + lCrossR.x * sinTheta;
+                rRot.y = r.y * cosTheta + lCrossR.y * sinTheta;
+                rRot.z = r.z * cosTheta + lCrossR.z * sinTheta;
 
                 val = valueOfAVector(rRot);
                 rRot.x = rRot.x/val;
@@ -633,7 +657,70 @@ void keyboardListener(unsigned char key, int x,int y){
                 r = rRot;
             }
             break;
+        case 'q':
 
+
+            if(currentZAngle + 1 <= qHighestRotation){
+                currentZAngle += 1;
+                cout << "Current Z Angle q : " << currentZAngle << endl;
+            }
+            break;
+        case 'w' :
+
+
+            if(currentZAngle - 1 >= wHighestRotation){
+                currentZAngle -= 1;
+                cout << "Current Z Angle w: " << currentZAngle << endl;
+            }
+            break;
+        case 'e':
+
+
+            if(currentYAngle + 1 <= eHighestRotation){
+                currentYAngle += 1;
+                cout << "Current Y Angle e : " << currentYAngle << endl;
+            }
+            break;
+        case 'r' :
+
+
+            if(currentYAngle - 1 >= rHighestRotation){
+                currentYAngle -= 1;
+                cout << "Current Y Angle r : " << currentYAngle << endl;
+            }
+            break;
+        case 'a':
+
+
+            if(currentYAngleCylinder + 1 <= aHighestRotation){
+                currentYAngleCylinder += 1;
+                cout << "Current Y Angle Cylinder a : " << currentYAngleCylinder << endl;
+            }
+            break;
+        case 's' :
+
+
+            if(currentYAngleCylinder - 1 >= sHighestRotation){
+                currentYAngleCylinder -= 1;
+                cout << "Current Y Angle cylinder s : " << currentYAngleCylinder << endl;
+            }
+            break;
+         case 'f':
+
+
+            if(currentXAngle + 1 <= fHighestRotation){
+                currentXAngle += 1;
+                cout << "Current X Angle f : " << currentXAngle << endl;
+            }
+            break;
+         case 'd' :
+
+
+            if(currentXAngle - 1 >= dHighestRotation){
+                currentXAngle -= 1;
+                cout << "Current X Angle d : " << currentXAngle << endl;
+            }
+            break;
 		default:
 			break;
 	}
@@ -751,47 +838,50 @@ void display(){
 	drawAxes();
 	drawGrid();
 
-    //glColor3f(1,0,0);
-    //drawSquare(10);
-
-    //drawSS();
-
-    //drawCircle(30,24);
-
-    //drawCone(20,50,24);
-    //
-    glPushMatrix();
-    {
-        glRotatef(90,0,1,0);
-        drawUpperHemisphere(12.5,50,25);
-        drawLowerHemisphere(12.5,50,25);
-    }
-    glPopMatrix();
 
     glPushMatrix();
-    {
-        glRotatef(90,0,1,0);
-        glTranslatef(0,0,-18.75);
-        drawUpperHemisphere(6.25,50,25);
-        glTranslatef(0,0,-6.25);
-        drawCylinder(6.25,50,50);
-        glTranslatef(0,0,-6.25);
-        drawCylinder(6.25,50,50);
-        glTranslatef(0,0,-6.25);
-        drawCylinder(6.25,50,50);
-        glTranslatef(0,0,-6.25);
-        drawCylinder(6.25,50,50);
-        glTranslatef(0,0,-6.25);
-        drawCylinder(6.25,50,50);
-        glTranslatef(0,0,-6.25);
-        drawCylinder(6.25,50,50);
-
-        glRotatef(180,0,1,0);
-        drawOuterCircle(6.25,50,50);
 
 
-    }
+    glRotatef(currentZAngle,0,0,1);
+    glRotatef(90,0,1,0);
+    drawUpperHemisphere(12.5,50,25);
+    glRotatef(currentYAngle,0,1,0);
+    drawLowerHemisphere(12.5,50,25);
+
+    glTranslatef(0,0,-12.5);
+    glRotatef(currentYAngleCylinder,0,1,0);
+    glRotatef(currentXAngle,0,0,1);
+    glTranslatef(0,0,-6.25);
+    drawUpperHemisphere(6.25,50,25);
+
+
+    glTranslatef(0,0,-6.25);
+    drawCylinder(6.25,50,50);
+    glTranslatef(0,0,-6.25);
+    drawCylinder(6.25,50,50);
+    glTranslatef(0,0,-6.25);
+    drawCylinder(6.25,50,50);
+    glTranslatef(0,0,-6.25);
+    drawCylinder(6.25,50,50);
+    glTranslatef(0,0,-6.25);
+    drawCylinder(6.25,50,50);
+    glTranslatef(0,0,-6.25);
+    drawCylinder(6.25,50,50);
+
+    glRotatef(180,0,1,0);
+    drawOuterCircle(6.25,50,50);
+
+
+
     glPopMatrix();
+
+
+    glTranslatef(-200,0,0);
+    glRotatef(90,0,1,0);
+    glColor3f(0.5,0.5,0.5);
+    drawSquare(60);
+
+
 
 	//ADD this line in the end --- if you use double buffer (i.e. GL_DOUBLE)
 	glutSwapBuffers();
@@ -812,6 +902,18 @@ void init(){
 	cameraAngle=1.0;
 	angle=0;
     rotationAngle = 5.0;
+    currentZAngle = 0;
+    currentYAngle = 0;
+    currentXAngle = 0;
+    currentYAngleCylinder = 0;
+    qHighestRotation = 45;
+    wHighestRotation = -45;
+    eHighestRotation = 45;
+    rHighestRotation = -45;
+    aHighestRotation = 45;
+    sHighestRotation = -45;
+    dHighestRotation = -45;
+    fHighestRotation = 45;
 
     pos = {100,100,0};
     u = {0,0,1};

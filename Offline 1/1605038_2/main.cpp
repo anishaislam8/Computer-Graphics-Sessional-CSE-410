@@ -1,27 +1,38 @@
 #include<stdio.h>
+#include<iostream>
 #include<stdlib.h>
 #include<math.h>
-
+#include<time.h>
 #include <windows.h>
 #include <GL/glut.h>
 
 #define pi (2*acos(0.0))
+
+using namespace std;
 
 double cameraHeight;
 double cameraAngle;
 int drawgrid;
 int drawaxes;
 double angle;
-double bubbleSpeed;
-double bubbleHighestSpeed;
-double bubbleLowestSpeed;
+double boundaryLength;
+double centerCircleRadius;
+double bubbleVelocity;
+double bubbleHighestVelocity;
+double bubbleLowestVelocity;
 bool bubbleMoving;
-double saveBubbleSpeed;
+double saveBubbleVelocity;
+int displayFunctionCalled;
+
+
 
 struct point
 {
 	double x,y,z;
 };
+
+struct point bubbleDirection[5];
+struct point position[5];
 
 
 void drawAxes()
@@ -71,15 +82,16 @@ void drawSquare(double a)
 {
     //glColor3f(1.0,0.0,0.0);
 	glBegin(GL_QUADS);{
-		glVertex3f( a, a,2);
-		glVertex3f( a,-a,2);
-		glVertex3f(-a,-a,2);
-		glVertex3f(-a, a,2);
+		glVertex3f( a, a,0);
+		glVertex3f( a,-a,0);
+		glVertex3f(-a,-a,0);
+		glVertex3f(-a, a,0);
 	}glEnd();
 }
 
 
-void drawCircle(double radius,int segments)
+
+void drawCircle(double radius,int segments, double translateX, double translateY)
 {
     int i;
     struct point points[100];
@@ -95,8 +107,8 @@ void drawCircle(double radius,int segments)
     {
         glBegin(GL_LINES);
         {
-			glVertex3f(points[i].x,points[i].y,0);
-			glVertex3f(points[i+1].x,points[i+1].y,0);
+			glVertex3f(points[i].x + translateX,points[i].y + translateY,0);
+			glVertex3f(points[i+1].x + translateX,points[i+1].y + translateY ,0);
         }
         glEnd();
     }
@@ -222,11 +234,11 @@ void keyboardListener(unsigned char key, int x,int y){
 		case 'p':
 			if(bubbleMoving){
                 bubbleMoving = false;
-                saveBubbleSpeed = bubbleSpeed;
-                bubbleSpeed = 0;
+                saveBubbleVelocity = bubbleVelocity;
+                bubbleVelocity = 0;
 			} else {
 			    bubbleMoving = true;
-                bubbleSpeed = saveBubbleSpeed;
+                bubbleVelocity = saveBubbleVelocity;
 			}
 			break;
 
@@ -239,13 +251,13 @@ void keyboardListener(unsigned char key, int x,int y){
 void specialKeyListener(int key, int x,int y){
 	switch(key){
 		case GLUT_KEY_DOWN:		//down arrow key
-			if (bubbleSpeed - 0.02 >= bubbleLowestSpeed){
-                bubbleSpeed -= 0.02;
+			if (bubbleVelocity - 0.02 >= bubbleLowestVelocity){
+                bubbleVelocity -= 0.02;
 			}
 			break;
 		case GLUT_KEY_UP:		// up arrow key
-			if (bubbleSpeed + 0.02 <= bubbleHighestSpeed){
-                bubbleSpeed += 0.02;
+			if (bubbleVelocity + 0.02 <= bubbleHighestVelocity){
+                bubbleVelocity += 0.02;
 			}
 			break;
 
@@ -297,8 +309,11 @@ void mouseListener(int button, int state, int x, int y){	//x, y is the x-y of th
 }
 
 
-
 void display(){
+    if(displayFunctionCalled > -1){
+        displayFunctionCalled+=1;
+    }
+
 
 	//clear the display
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -338,12 +353,37 @@ void display(){
 
 
     glColor3f(0,1,0);
-    drawBoundary(10);
+    drawBoundary(boundaryLength);
 
     //drawSS();
 
     glColor3f(1,0,0);
-    drawCircle(7, 50);
+    drawCircle(centerCircleRadius, 50,0,0);
+
+
+    // shoot bubbles :)
+    /*if(displayFunctionCalled < 1500){
+        drawCircle(1,50, position[0].x, position[0].y);
+    }
+    else if(displayFunctionCalled >= 1500 && displayFunctionCalled < 3000){
+        drawCircle(1,50, position[1].x, position[1].y);
+    }
+    else if(displayFunctionCalled >= 3000 && displayFunctionCalled < 4500){
+        drawCircle(1,50, position[2].x, position[2].y);
+    }
+    else if(displayFunctionCalled >= 4500 && displayFunctionCalled < 6000){
+        drawCircle(1,50, position[3].x, position[3].y);
+    }
+    else if(displayFunctionCalled > 6000){
+        drawCircle(1,50, position[4].x, position[4].y);
+        displayFunctionCalled = -1;
+    }*/
+
+    for (int i = 0; i < 5; i++){
+        drawCircle(1,50, position[i].x, position[i].y);
+    }
+
+
 
 
     //drawCone(20,50,24);
@@ -359,23 +399,91 @@ void display(){
 
 
 void animate(){
-	angle+=0.05;
-	//codes for any changes in Models, Camera
+
+	for(int i = 0; i < 5; i++){
+        // reflection along x axis
+
+
+        /*if((position[i].y  + (bubbleVelocity * bubbleDirection[i].y) - 1  <= -boundaryLength) || (position[i].y + (bubbleVelocity * bubbleDirection[i].y) + 1 >= boundaryLength) )
+        {
+            cout << "Inside y " << i << endl;
+            cout << "Boundary " << boundaryLength << endl;
+            cout << i << "  -> y: " << position[i].y << endl;
+           bubbleDirection[i].y = bubbleDirection[i].y * -1;
+
+        }
+        // reflection along y axis
+        else if((position[i].x + (bubbleVelocity * bubbleDirection[i].x) - 1 <= -boundaryLength) || (position[i].x + ((bubbleVelocity * bubbleDirection[i].x)) + 1 >= boundaryLength))
+        {
+            cout << "Inside x " << i << endl;
+            cout << "Boundary " << boundaryLength << endl;
+            cout << i << "  -> x: " << position[i].x << endl;
+            bubbleDirection[i].x  = bubbleDirection[i].x * -1;
+        }*/
+
+        position[i].x += (bubbleVelocity * bubbleDirection[i].x);
+        position[i].y += (bubbleVelocity * bubbleDirection[i].y);
+
+	}
+
+
 	glutPostRedisplay();
 }
 
 void init(){
 	//codes for initialization
+    srand (time(NULL) * 1000);
 	drawgrid=0;
 	drawaxes=1;
 	cameraHeight=150.0;
 	cameraAngle=1.0;
 	angle=0;
+	displayFunctionCalled = 0;
 
-	bubbleSpeed = 6.0;
-	bubbleHighestSpeed = 10.0;
-	bubbleLowestSpeed = 3.0;
+	bubbleVelocity = 0.1;
+	bubbleHighestVelocity = 1.0;
+	bubbleLowestVelocity = 0.01;
 	bubbleMoving = true;
+	boundaryLength = 10;
+	centerCircleRadius = 7;
+
+    double xVal = (rand() % 10 + 1) * 0.001;
+    double yVal = (rand() % 10 + 1) * 0.002;
+
+
+    position[0] = {-(boundaryLength), -(boundaryLength), 0};
+    bubbleDirection[0] = {xVal, yVal,0};
+
+
+    xVal = (rand() % 10 + 1) * 0.001;
+    yVal = (rand() % 10 + 1) * 0.002;
+
+    position[1] = {-(boundaryLength), -(boundaryLength), 0};
+    bubbleDirection[1] = {xVal, yVal,0};
+
+    xVal = (rand() % 10 + 1) * 0.001;
+    yVal = (rand() % 10 + 1) * 0.002;
+
+    position[2] = {-(boundaryLength), -(boundaryLength), 0};
+    bubbleDirection[2] = {xVal, yVal,0};
+
+    xVal = (rand() % 10 + 1) * 0.001;
+    yVal = (rand() % 10 + 1) * 0.002;
+
+    position[3] = {-(boundaryLength), -(boundaryLength), 0};
+    bubbleDirection[3] = {xVal, yVal,0};
+
+    xVal = (rand() % 10 + 1) * 0.001;
+    yVal = (rand() % 10 + 1) * 0.002;
+
+    position[4] = {-(boundaryLength), -(boundaryLength), 0};
+    bubbleDirection[4] = {xVal, yVal,0};
+
+    for(int i = 0 ; i < 5; i++){
+        position[i].x += bubbleVelocity * bubbleDirection[i].x;
+        position[i].y += bubbleVelocity * bubbleDirection[i].y;
+    }
+
 
 	//clear the screen
 	glClearColor(0,0,0,0);
