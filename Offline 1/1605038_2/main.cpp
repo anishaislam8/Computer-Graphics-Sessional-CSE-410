@@ -15,14 +15,15 @@ double cameraAngle;
 int drawgrid;
 int drawaxes;
 double angle;
+
 double boundaryLength;
 double centerCircleRadius;
-double bubbleVelocity;
-double bubbleHighestVelocity;
-double bubbleLowestVelocity;
-bool bubbleMoving;
-double saveBubbleVelocity;
+double smallCircleRadius;
 int displayFunctionCalled;
+
+double speed;
+double maxSpeed;
+double minSpeed;
 
 
 
@@ -31,8 +32,8 @@ struct point
 	double x,y,z;
 };
 
-struct point bubbleDirection[5];
-struct point position[5];
+struct point direction[1];
+struct point position[1];
 
 
 void drawAxes()
@@ -232,14 +233,7 @@ void keyboardListener(unsigned char key, int x,int y){
 	switch(key){
 
 		case 'p':
-			if(bubbleMoving){
-                bubbleMoving = false;
-                saveBubbleVelocity = bubbleVelocity;
-                bubbleVelocity = 0;
-			} else {
-			    bubbleMoving = true;
-                bubbleVelocity = saveBubbleVelocity;
-			}
+
 			break;
 
 		default:
@@ -250,15 +244,19 @@ void keyboardListener(unsigned char key, int x,int y){
 
 void specialKeyListener(int key, int x,int y){
 	switch(key){
-		case GLUT_KEY_DOWN:		//down arrow key
-			if (bubbleVelocity - 0.02 >= bubbleLowestVelocity){
-                bubbleVelocity -= 0.02;
-			}
+		case GLUT_KEY_DOWN:
+		    if(speed - 0.01 >= minSpeed)
+            {
+                //down arrow key
+                speed -= 0.01;
+            }
 			break;
 		case GLUT_KEY_UP:		// up arrow key
-			if (bubbleVelocity + 0.02 <= bubbleHighestVelocity){
-                bubbleVelocity += 0.02;
-			}
+            if(speed + 0.01 <= maxSpeed)
+            {
+                //down arrow key
+                speed += 0.01;
+            }
 			break;
 
 		/*case GLUT_KEY_RIGHT:
@@ -310,9 +308,7 @@ void mouseListener(int button, int state, int x, int y){	//x, y is the x-y of th
 
 
 void display(){
-    if(displayFunctionCalled > -1){
-        displayFunctionCalled+=1;
-    }
+
 
 
 	//clear the display
@@ -361,70 +357,79 @@ void display(){
     drawCircle(centerCircleRadius, 50,0,0);
 
 
-    // shoot bubbles :)
-    /*if(displayFunctionCalled < 1500){
-        drawCircle(1,50, position[0].x, position[0].y);
+    for (int i = 0; i < 1; i++){
+        drawCircle(smallCircleRadius,50, position[i].x, position[i].y);
     }
-    else if(displayFunctionCalled >= 1500 && displayFunctionCalled < 3000){
-        drawCircle(1,50, position[1].x, position[1].y);
-    }
-    else if(displayFunctionCalled >= 3000 && displayFunctionCalled < 4500){
-        drawCircle(1,50, position[2].x, position[2].y);
-    }
-    else if(displayFunctionCalled >= 4500 && displayFunctionCalled < 6000){
-        drawCircle(1,50, position[3].x, position[3].y);
-    }
-    else if(displayFunctionCalled > 6000){
-        drawCircle(1,50, position[4].x, position[4].y);
-        displayFunctionCalled = -1;
-    }*/
-
-    for (int i = 0; i < 5; i++){
-        drawCircle(1,50, position[i].x, position[i].y);
-    }
-
-
-
-
-    //drawCone(20,50,24);
-
-	//drawSphere(30,24,20);
-
-
 
 
 	//ADD this line in the end --- if you use double buffer (i.e. GL_DOUBLE)
 	glutSwapBuffers();
 }
 
+bool isInsideTheCircle(int i)
+{
+    double c1c2 = sqrt(position[i].x * position[i].x + position[i].y * position[i].y + position[i].z * position[i].z);
+    if(c1c2 + smallCircleRadius <= centerCircleRadius){
+        return true;
+    } else {
+        return false;
+    }
+}
+
+point normalVector(point a){
+    point normal = {a.x, a.y, a.z};
+    double valueOfNormal = sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
+    normal.x = normal.x / valueOfNormal;
+    normal.y = normal.y / valueOfNormal;
+    normal.z = normal.z / valueOfNormal;
+    return normal;
+}
+
+double dotProduct(point a, point b){
+    return a.x*b.x + a.y*b.y + a.z*b.z;
+}
 
 void animate(){
 
-	for(int i = 0; i < 5; i++){
-        // reflection along x axis
 
 
-        /*if((position[i].y  + (bubbleVelocity * bubbleDirection[i].y) - 1  <= -boundaryLength) || (position[i].y + (bubbleVelocity * bubbleDirection[i].y) + 1 >= boundaryLength) )
-        {
-            cout << "Inside y " << i << endl;
-            cout << "Boundary " << boundaryLength << endl;
-            cout << i << "  -> y: " << position[i].y << endl;
-           bubbleDirection[i].y = bubbleDirection[i].y * -1;
+    for(int i = 0; i < 1; i++){
+        //cout << i << " " << position[i].x << "," <<  position[i].y << "," <<  position[i].z << endl;
 
+        //is within the circle?
+        bool ans = isInsideTheCircle(i);
+        if(ans){
+            cout << "inside the circle " << endl;
+            double c1c2 = sqrt(position[i].x * position[i].x + position[i].y * position[i].y + position[i].z * position[i].z);
+            if(c1c2 == (centerCircleRadius - smallCircleRadius)){
+                cout << "touched" << endl;
+                //reflection
+                //step 1 : normal vector : c2 - c1, then normalize
+
+                point normal = normalVector(position[i]);
+                cout << normal.x << "," << normal.y << "," << normal.z << endl;
+
+                //step 2 : r = d - 2(d.n)n
+                double val = 2 * dotProduct(position[i], normal);
+                direction[i] = {position[i].x - normal.x * val, position[i].y - normal.y * val, position[i].z - normal.z * val };
+
+            }
+        } else {
+
+            if(position[i].x + speed * direction[i].x >= boundaryLength || position[i].x + speed * direction[i].x <= -boundaryLength )
+            {
+                direction[i].x *= -1;
+            }
+            else if (position[i].y + speed * direction[i].y >= boundaryLength || position[i].y + speed * direction[i].y <= -boundaryLength)
+            {
+                direction[i].y *= -1;
+            }
         }
-        // reflection along y axis
-        else if((position[i].x + (bubbleVelocity * bubbleDirection[i].x) - 1 <= -boundaryLength) || (position[i].x + ((bubbleVelocity * bubbleDirection[i].x)) + 1 >= boundaryLength))
-        {
-            cout << "Inside x " << i << endl;
-            cout << "Boundary " << boundaryLength << endl;
-            cout << i << "  -> x: " << position[i].x << endl;
-            bubbleDirection[i].x  = bubbleDirection[i].x * -1;
-        }*/
 
-        position[i].x += (bubbleVelocity * bubbleDirection[i].x);
-        position[i].y += (bubbleVelocity * bubbleDirection[i].y);
+        position[i].x += (speed * 1.0 * direction[i].x);
+        position[i].y += (speed * 1.0 * direction[i].y);
 
-	}
+    }
 
 
 	glutPostRedisplay();
@@ -438,51 +443,35 @@ void init(){
 	cameraHeight=150.0;
 	cameraAngle=1.0;
 	angle=0;
-	displayFunctionCalled = 0;
+	speed = 0.01;
+	maxSpeed = 0.5;
+	minSpeed = 0.001;
 
-	bubbleVelocity = 0.1;
-	bubbleHighestVelocity = 1.0;
-	bubbleLowestVelocity = 0.01;
-	bubbleMoving = true;
+
+
+	displayFunctionCalled = 0;
 	boundaryLength = 10;
 	centerCircleRadius = 7;
+	smallCircleRadius = 1;
 
-    double xVal = (rand() % 10 + 1) * 0.001;
-    double yVal = (rand() % 10 + 1) * 0.002;
+	for(int i = 0; i < 1; i++){
 
-
-    position[0] = {-(boundaryLength), -(boundaryLength), 0};
-    bubbleDirection[0] = {xVal, yVal,0};
+        position[i] = {-(boundaryLength), -(boundaryLength), 0};
 
 
-    xVal = (rand() % 10 + 1) * 0.001;
-    yVal = (rand() % 10 + 1) * 0.002;
+        direction[i].x = (float)rand()/RAND_MAX + 0.01;
+        direction[i].y= (float)rand()/RAND_MAX + 0.01;
+        direction[i].z = 0;
 
-    position[1] = {-(boundaryLength), -(boundaryLength), 0};
-    bubbleDirection[1] = {xVal, yVal,0};
+        cout << direction[i].x << " " << direction[i].y << " " << direction[i].z << endl;
 
-    xVal = (rand() % 10 + 1) * 0.001;
-    yVal = (rand() % 10 + 1) * 0.002;
 
-    position[2] = {-(boundaryLength), -(boundaryLength), 0};
-    bubbleDirection[2] = {xVal, yVal,0};
+	}
 
-    xVal = (rand() % 10 + 1) * 0.001;
-    yVal = (rand() % 10 + 1) * 0.002;
 
-    position[3] = {-(boundaryLength), -(boundaryLength), 0};
-    bubbleDirection[3] = {xVal, yVal,0};
 
-    xVal = (rand() % 10 + 1) * 0.001;
-    yVal = (rand() % 10 + 1) * 0.002;
 
-    position[4] = {-(boundaryLength), -(boundaryLength), 0};
-    bubbleDirection[4] = {xVal, yVal,0};
 
-    for(int i = 0 ; i < 5; i++){
-        position[i].x += bubbleVelocity * bubbleDirection[i].x;
-        position[i].y += bubbleVelocity * bubbleDirection[i].y;
-    }
 
 
 	//clear the screen
