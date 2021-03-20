@@ -20,10 +20,11 @@ double boundaryLength;
 double centerCircleRadius;
 double smallCircleRadius;
 int displayFunctionCalled;
-
+bool done;
 double speed;
 double maxSpeed;
 double minSpeed;
+double savedBubbleSpeed;
 
 
 
@@ -32,8 +33,11 @@ struct point
 	double x,y,z;
 };
 
-struct point direction[1];
-struct point position[1];
+struct point direction[5];
+struct point position[5];
+bool inside[5];
+bool created[5];
+
 
 
 void drawAxes()
@@ -233,7 +237,11 @@ void keyboardListener(unsigned char key, int x,int y){
 	switch(key){
 
 		case 'p':
-
+        {
+            double temp = speed;
+            speed = savedBubbleSpeed;
+            savedBubbleSpeed = temp;
+        }
 			break;
 
 		default:
@@ -245,17 +253,17 @@ void keyboardListener(unsigned char key, int x,int y){
 void specialKeyListener(int key, int x,int y){
 	switch(key){
 		case GLUT_KEY_DOWN:
-		    if(speed - 0.01 >= minSpeed)
+		    if(speed - 0.001 >= minSpeed)
             {
                 //down arrow key
-                speed -= 0.01;
+                speed -= 0.001;
             }
 			break;
 		case GLUT_KEY_UP:		// up arrow key
-            if(speed + 0.01 <= maxSpeed)
+            if(speed + 0.001 <= maxSpeed)
             {
                 //down arrow key
-                speed += 0.01;
+                speed += 0.001;
             }
 			break;
 
@@ -308,8 +316,9 @@ void mouseListener(int button, int state, int x, int y){	//x, y is the x-y of th
 
 
 void display(){
-
-
+    if(displayFunctionCalled <= 10001){
+        displayFunctionCalled+=1;
+    }
 
 	//clear the display
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -357,18 +366,68 @@ void display(){
     drawCircle(centerCircleRadius, 50,0,0);
 
 
-    for (int i = 0; i < 1; i++){
+    /*for (int i = 0; i < nDone; i++){
         drawCircle(smallCircleRadius,50, position[i].x, position[i].y);
+    }*/
+
+
+   if(displayFunctionCalled >= 10000){
+        for(int i = 0; i < 5; i++){
+            created[i] = true;
+        }
+        drawCircle(smallCircleRadius,50, position[0].x, position[0].y);
+        drawCircle(smallCircleRadius,50, position[1].x, position[1].y);
+        drawCircle(smallCircleRadius,50, position[2].x, position[2].y);
+        drawCircle(smallCircleRadius,50, position[3].x, position[3].y);
+        drawCircle(smallCircleRadius,50, position[4].x, position[4].y);
+
     }
+    else if(displayFunctionCalled >= 7500){
+        for(int i = 0; i < 4; i++){
+            created[i] = true;
+        }
+        drawCircle(smallCircleRadius,50, position[0].x, position[0].y);
+        drawCircle(smallCircleRadius,50, position[1].x, position[1].y);
+        drawCircle(smallCircleRadius,50, position[2].x, position[2].y);
+        drawCircle(smallCircleRadius,50, position[3].x, position[3].y);
+
+    }
+    else if(displayFunctionCalled >= 5000){
+        for(int i = 0; i < 3; i++){
+            created[i] = true;
+        }
+        drawCircle(smallCircleRadius,50, position[0].x, position[0].y);
+        drawCircle(smallCircleRadius,50, position[1].x, position[1].y);
+        drawCircle(smallCircleRadius,50, position[2].x, position[2].y);
+
+    }
+    else if(displayFunctionCalled >= 2500){
+        for(int i = 0; i < 2; i++){
+            created[i] = true;
+        }
+        drawCircle(smallCircleRadius,50, position[0].x, position[0].y);
+        drawCircle(smallCircleRadius,50, position[1].x, position[1].y);
+
+    }
+
+    else if(displayFunctionCalled >= 100){
+        for(int i = 0; i < 1; i++){
+            created[i] = true;
+        }
+        drawCircle(smallCircleRadius,50, position[0].x, position[0].y);
+
+    }
+
+
 
 
 	//ADD this line in the end --- if you use double buffer (i.e. GL_DOUBLE)
 	glutSwapBuffers();
 }
 
-bool isInsideTheCircle(int i)
+bool isInsideTheCircle(point a)
 {
-    double c1c2 = sqrt(position[i].x * position[i].x + position[i].y * position[i].y + position[i].z * position[i].z);
+    double c1c2 = sqrt((a.x - 0) * (a.x - 0) + (a.y - 0) * (a.y - 0) + (a.z - 0) * (a.z - 0));
     if(c1c2 + smallCircleRadius <= centerCircleRadius){
         return true;
     } else {
@@ -376,9 +435,9 @@ bool isInsideTheCircle(int i)
     }
 }
 
-point normalVector(point a){
-    point normal = {a.x, a.y, a.z};
-    double valueOfNormal = sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
+point normalVector(point a, point b){
+    point normal = {a.x - b.x, a.y - b.y, a.z - b.z};
+    double valueOfNormal = sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y) + (a.z - b.z) * (a.z - b.z));
     normal.x = normal.x / valueOfNormal;
     normal.y = normal.y / valueOfNormal;
     normal.z = normal.z / valueOfNormal;
@@ -393,41 +452,112 @@ void animate(){
 
 
 
-    for(int i = 0; i < 1; i++){
-        //cout << i << " " << position[i].x << "," <<  position[i].y << "," <<  position[i].z << endl;
+    for(int i = 0; i < 5; i++){
+        if(created[i]){
 
-        //is within the circle?
-        bool ans = isInsideTheCircle(i);
-        if(ans){
-            cout << "inside the circle " << endl;
-            double c1c2 = sqrt(position[i].x * position[i].x + position[i].y * position[i].y + position[i].z * position[i].z);
-            if(c1c2 == (centerCircleRadius - smallCircleRadius)){
-                cout << "touched" << endl;
-                //reflection
-                //step 1 : normal vector : c2 - c1, then normalize
+            //is within the circle?
+            bool ans = isInsideTheCircle(position[i]);
+            if( ans && !inside[i]){
+                inside[i] = true;
 
-                point normal = normalVector(position[i]);
-                cout << normal.x << "," << normal.y << "," << normal.z << endl;
+                //overlap
+                for(int k = 0; k < 5; k++){
 
-                //step 2 : r = d - 2(d.n)n
-                double val = 2 * dotProduct(position[i], normal);
-                direction[i] = {position[i].x - normal.x * val, position[i].y - normal.y * val, position[i].z - normal.z * val };
+                    if( k!= i && inside[k]){
+                        double dist = sqrt(pow(position[i].x - position[k].x, 2) + pow(position[i].y - position[k].y, 2) + pow(position[i].z - position[k].z, 2) );
+                        if(dist < 2*smallCircleRadius){
+
+                            inside[i] = false;
+
+                        }
+                    }
+                }
 
             }
-        } else {
+            if(inside[i]){
 
-            if(position[i].x + speed * direction[i].x >= boundaryLength || position[i].x + speed * direction[i].x <= -boundaryLength )
-            {
-                direction[i].x *= -1;
+                double c1c2 = sqrt(position[i].x * position[i].x + position[i].y * position[i].y + position[i].z * position[i].z);
+
+                //reflection with circle
+                if(c1c2 >= centerCircleRadius-smallCircleRadius){
+
+                    //reflection
+                    //step 1 : normal vector : c2 - c1, then normalize
+                    point c1 = {0,0,0};
+                    point normal = normalVector(position[i], c1);
+
+
+                    //step 2 : r = d - 2(d.n)n
+                    double val = 2 * dotProduct(direction[i], normal);
+                    direction[i] = {direction[i].x - normal.x * val, direction[i].y - normal.y * val, direction[i].z - normal.z * val };
+
+                    while(sqrt(position[i].x * position[i].x + position[i].y * position[i].y + position[i].z * position[i].z) >= centerCircleRadius-smallCircleRadius ){
+                        position[i].x += (speed * 1.0 * direction[i].x);
+                        position[i].y += (speed * 1.0 * direction[i].y);
+                    }
+
+                }
+
+
+
+                //reflection with other bubbles
+                for(int j = 0; j < 5; j++){
+                    if (j != i) // other bubbles except this
+                    {
+                        if(inside[j] == true)
+                        {
+                            double c1c2 = sqrt(pow(position[i].x - position[j].x, 2) + pow(position[i].y - position[j].y, 2) + pow(position[i].z - position[j].z, 2) );
+
+                            //reflection with bubble
+                            if(c1c2 <= 2*smallCircleRadius){
+
+                                //reflection
+                                //step 1 : normal vector : c2 - c1, then normalize
+                                point normalOne = normalVector(position[i], position[j]);
+
+                                point normalTwo = normalVector(position[j], position[i]);
+
+
+
+                                //step 2 : r = d - 2(d.n)n
+                                double val = 2 * dotProduct(direction[i], normalOne);
+                                direction[i] = {direction[i].x - normalOne.x * val, direction[i].y - normalOne.y * val, direction[i].z - normalOne.z * val };
+
+                                val = 2 * dotProduct(direction[j], normalTwo);
+                                direction[j] = {direction[j].x - normalTwo.x * val, direction[j].y - normalTwo.y * val, direction[j].z - normalTwo.z * val };
+
+                                while(sqrt(pow(position[i].x - position[j].x, 2) + pow(position[i].y - position[j].y, 2) + pow(position[i].z - position[j].z, 2) ) <= 2 * smallCircleRadius){
+                                    position[j].x += (speed * 1.0 * direction[j].x);
+                                    position[j].y += (speed * 1.0 * direction[j].y);
+
+                                }
+
+                              }
+                        }
+                        else
+                        {
+                            //no reflection with bubbles outside the circle
+                        }
+                    }
+                }
+            } else {
+
+                if(position[i].x + speed * direction[i].x >= boundaryLength || position[i].x + speed * direction[i].x <= -boundaryLength )
+                {
+                    direction[i].x *= -1;
+                }
+                else if (position[i].y + speed * direction[i].y >= boundaryLength || position[i].y + speed * direction[i].y <= -boundaryLength)
+                {
+                    direction[i].y *= -1;
+                }
+
+
+
             }
-            else if (position[i].y + speed * direction[i].y >= boundaryLength || position[i].y + speed * direction[i].y <= -boundaryLength)
-            {
-                direction[i].y *= -1;
-            }
+            position[i].x += (speed * 1.0 * direction[i].x);
+            position[i].y += (speed * 1.0 * direction[i].y);
+
         }
-
-        position[i].x += (speed * 1.0 * direction[i].x);
-        position[i].y += (speed * 1.0 * direction[i].y);
 
     }
 
@@ -443,10 +573,10 @@ void init(){
 	cameraHeight=150.0;
 	cameraAngle=1.0;
 	angle=0;
-	speed = 0.01;
-	maxSpeed = 0.5;
-	minSpeed = 0.001;
-
+	speed = 0.001;
+	maxSpeed = 0.05;
+	minSpeed = 0.0005;
+    savedBubbleSpeed = 0;
 
 
 	displayFunctionCalled = 0;
@@ -454,13 +584,16 @@ void init(){
 	centerCircleRadius = 7;
 	smallCircleRadius = 1;
 
-	for(int i = 0; i < 1; i++){
 
+
+	for(int i = 0; i < 5; i++){
+        inside[i] = false;
+        created[i] = false;
         position[i] = {-(boundaryLength), -(boundaryLength), 0};
 
 
-        direction[i].x = (float)rand()/RAND_MAX + 0.01;
-        direction[i].y= (float)rand()/RAND_MAX + 0.01;
+        direction[i].x = (float)rand()/RAND_MAX + 0.001;
+        direction[i].y= (float)rand()/RAND_MAX + 0.005;
         direction[i].z = 0;
 
         cout << direction[i].x << " " << direction[i].y << " " << direction[i].z << endl;

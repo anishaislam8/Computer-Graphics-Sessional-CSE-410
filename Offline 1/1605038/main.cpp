@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <math.h>
 #define pi (2*acos(0.0))
+#include <vector>
 
 using namespace std;
 
@@ -41,6 +42,8 @@ struct point pos;
 struct point u;
 struct point r;
 struct point l;
+
+vector<point> gunshots;
 
 double degreeToradian(double r){
     return (r * pi)/180;
@@ -779,7 +782,27 @@ void specialKeyListener(int key, int x,int y){
 void mouseListener(int button, int state, int x, int y){	//x, y is the x-y of the screen (2D)
 	switch(button){
 		case GLUT_LEFT_BUTTON:
-			//...
+			if(state == GLUT_DOWN){
+                // 2 times?? in ONE click? -- solution is checking DOWN or UP
+                double xComponent = -180;
+                double yComponent = -180 * tan(degreeToradian(currentZAngle));
+
+                double zComponent = (180-12.5) * cos(degreeToradian(currentYAngle)) * tan(degreeToradian(currentYAngle + currentYAngleCylinder)) + 12.5 * sin(degreeToradian(currentYAngle));
+                if(yComponent - 5 >= -150 && yComponent + 5 <= 150)
+                {
+                    if(zComponent - 5 >= -150 && zComponent + 5 <= 150)
+                    {
+                        point gunshot = {xComponent, yComponent, zComponent};
+
+                        gunshots.push_back(gunshot);
+                    }
+                } else {
+                    cout << "The gunshot will be partially outside plane, the gunshot is not drawn." << endl;
+
+                }
+
+
+			}
 			break;
 
 		case GLUT_RIGHT_BUTTON:
@@ -876,10 +899,26 @@ void display(){
     glPopMatrix();
 
 
+    glPushMatrix();
     glTranslatef(-200,0,0);
     glRotatef(90,0,1,0);
     glColor3f(0.5,0.5,0.5);
-    drawSquare(60);
+    drawSquare(150);
+    glPopMatrix();
+
+    //glTranslatef(-180,0,0);
+
+    glColor3f(1,0,0);
+    for(int i = 0; i < gunshots.size(); i++){
+        glPushMatrix();
+        glTranslatef(gunshots[i].x, gunshots[i].y, gunshots[i].z);
+        glRotatef(90,0,1,0);
+        drawSquare(5);
+        glPopMatrix();
+
+    }
+
+
 
 
 

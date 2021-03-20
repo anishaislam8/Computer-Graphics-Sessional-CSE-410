@@ -1,11 +1,12 @@
 # depslib dependency file v1.0
-1616134188 source:d:\study_materials\4-1\lab\cse 410 graphics\offline 1\1605038\main.cpp
+1616256709 source:d:\study_materials\4-1\lab\cse 410 graphics\offline 1\1605038\main.cpp
 	<windows.h>
 	<GLUT/glut.h>
 	<GL/glut.h>
 	<iostream>
 	<stdlib.h>
 	<math.h>
+	<vector>
 
 1301111162 c:\program files (x86)\codeblocks\mingw\include\windows.h
 	<winresrc.h>
