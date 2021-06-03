@@ -199,9 +199,7 @@ void initialize_frame_buffer(){
 void printZBuffer(){
     for(int i = 0; i < screen_height; i++){
         for(int j = 0; j < screen_width; j++){
-            if(z_buffer[i][j] == far_z){
-                outputFile << "\t" << "\t";
-            } else {
+            if(z_buffer[i][j] != far_z){
                 outputFile << z_buffer[i][j] << "\t";
             }
         }
@@ -215,12 +213,8 @@ void generateImage(){
 
     for(int i=0;i<screen_width;i++){
         for(int j=0;j<screen_height;j++){
-            image.set_pixel(i,j,frame_buffer[i][j].R,frame_buffer[i][j].G,frame_buffer[i][j].B);
-            //cout << frame_buffer[i][j].R<< ","<<frame_buffer[i][j].G<<","<<frame_buffer[i][j].B << " ";
-
+            image.set_pixel(j,i,frame_buffer[i][j].R,frame_buffer[i][j].G,frame_buffer[i][j].B);
         }
-        //cout << endl;
-
     }
     image.save_image("out.bmp");
 
@@ -255,12 +249,9 @@ void processConfigFile(){
     dx = (right_x - left_x)/screen_width;
     dy = (top_y - bottom_y)/screen_height;
 
-    /*cout << "Height : " << screen_height << ", width : " << screen_width << endl;
-    cout << "dx : " << dx << ", dy : " << dy << endl;
-    cout << "top_y : " << top_y << ", bottom_y : " << bottom_y << endl;*/
+
     TOP_Y = top_y-(dy/2);
     LEFT_X = left_x + (dx/2);
-    //cout << "TOP_Y : " << TOP_Y << ", LEFT_X : " << LEFT_X << endl << endl<<endl;
 
     //initialize z_buffer and frame_buffer
     initialize_z_buffer();
@@ -269,8 +260,8 @@ void processConfigFile(){
 }
 
 void openFilesStage1(){
-    inputFile.open("1/scene.txt");
-    outputFile.open("output/stage1.txt");
+    inputFile.open("scene.txt");
+    outputFile.open("stage1.txt");
     if(!inputFile){
         cout << "Error Input" << endl;
         exit(1);
@@ -282,8 +273,8 @@ void openFilesStage1(){
 }
 
 void openFilesStage2(){
-    inputFile.open("output/stage1.txt");
-    outputFile.open("output/stage2.txt");
+    inputFile.open("stage1.txt");
+    outputFile.open("stage2.txt");
     if(!inputFile){
         cout << "Error Input" << endl;
         exit(1);
@@ -295,8 +286,8 @@ void openFilesStage2(){
 }
 
 void openFilesStage3(){
-    inputFile.open("output/stage2.txt");
-    outputFile.open("output/stage3.txt");
+    inputFile.open("stage2.txt");
+    outputFile.open("stage3.txt");
     if(!inputFile){
         cout << "Error Input" << endl;
         exit(1);
@@ -308,8 +299,7 @@ void openFilesStage3(){
 }
 
 void openFilesStage4(){
-    inputFile.open("1/config.txt");
-    //inputFile.open("config.txt");
+    inputFile.open("config.txt");
     if(!inputFile){
         cout << "Error Input" << endl;
         exit(1);
@@ -317,9 +307,8 @@ void openFilesStage4(){
     processConfigFile();
     inputFile.close();
 
-    inputFile.open("output/stage3.txt");
-    //inputFile.open("stage3.txt");
-    outputFile.open("output/z-buffer.txt");
+    inputFile.open("stage3.txt");
+    outputFile.open("z-buffer.txt");
     if(!inputFile){
         cout << "Error Input" << endl;
         exit(1);
@@ -340,7 +329,7 @@ void setColor(){
 void setTopBottomScanLine(int point){
 
     double highest_y = max(max(triangle.points[point].y,triangle.points[point+1].y),triangle.points[point+2].y);
-    //cout << "Max y : " <<highest_y << endl;
+
     if(highest_y > TOP_Y){
         top_scan_line = TOP_Y;
     } else {
@@ -348,7 +337,7 @@ void setTopBottomScanLine(int point){
     }
 
     double lowest_y = min(min(triangle.points[point].y,triangle.points[point+1].y),triangle.points[point+2].y);
-    //cout << "Min y : " << lowest_y << endl;
+
     if(lowest_y < (bottom_y+(dy/2))){
         bottom_scan_line = (bottom_y+(dy/2));
     } else {
@@ -678,15 +667,12 @@ void handleStage4(){
             setTopBottomScanLine(0);
             setColor();
 
-            //cout << "\nTop scan line : " << top_scan_line << ", bottom scan line : " << bottom_scan_line << endl << endl;
-            //cout << "TOP_Y -top_scan_line : " << top_scan_line  << ", dy : " << dy << endl<< endl;
-            //cout << (TOP_Y - top_scan_line) / dy << " " << (TOP_Y - bottom_scan_line) / dy << endl<< endl;
-            int firstRow = (TOP_Y - top_scan_line) / dy;
-            int lastRow = (TOP_Y - bottom_scan_line) / dy;
 
-            //cout << "First row : " << firstRow << ", last row : " << lastRow << endl;
+            int firstRow = ceil((TOP_Y - top_scan_line) / dy);
+            int lastRow = ceil((TOP_Y - bottom_scan_line) / dy);
 
-            for(int row = firstRow; row <= lastRow; row++){
+
+            for(int row = firstRow; row < lastRow; row++){
 
                 double ys = TOP_Y - row * dy;
                 // suppose x12 is in between 1 and 2
@@ -749,6 +735,28 @@ void handleStage4(){
                         xb = x13;
                         zb = z13;
 
+                    } else {
+                        //find out the invalid point
+                        double minx = min(min(triangle.points[0].x,triangle.points[1].x),triangle.points[2].x);
+                        double maxX = max(max(triangle.points[0].x,triangle.points[1].x),triangle.points[2].x);
+
+                        if(x12 < minx || x12 > maxX){
+                            xa = x13;
+                            za = z13;
+                            xb = x23;
+                            zb = z23;
+                        }
+                        else if(x13 < minx || x13 > maxX){
+                            xa = x12;
+                            za = z12;
+                            xb = x23;
+                            zb = z23;
+                        } else if(x23 < minx || x23 > maxX){
+                            xa = x12;
+                            za = z12;
+                            xb = x13;
+                            zb = z13;
+                        }
                     }
 
                 }
@@ -778,60 +786,53 @@ void handleStage4(){
                     }
                 }
 
-                int left_column = round((LEFT_X - xa)/(-dx));
-                int right_column = round((LEFT_X - xb)/(-dx));
+                int left_column = ceil((LEFT_X - xa)/(-dx));
+                int right_column = ceil((LEFT_X - xb)/(-dx));
+
+                if(left_column > right_column){
+                    int temp = left_column;
+                    left_column = right_column;
+                    right_column = temp;
+
+                    double temp2 = xa;
+                    xa = xb;
+                    xb = temp2;
+
+                    temp2 = za;
+                    za = zb;
+                    zb = temp2;
+
+                }
 
 
                 if(left_column < 0){
                     left_column = 0;
                 }
-                if(right_column < 0){
-                    right_column = 0;
-                }
+
                 if(right_column > screen_width - 1){
                     right_column = screen_width - 1;
                 }
-                if(left_column > screen_width - 1){
-                    left_column = screen_width - 1;
-                }
+
 
                 //cout << "Left_column : " << left_column << ", right_column : " << right_column << endl;
-                if(left_column < right_column){
-                    for(int column = left_column; column <= right_column; column++){
-                        if(xb-xa == 0){
-                            continue;
-                        } else {
-                            double xp = LEFT_X + column * dx;
-                            double zp = za + ((xp-xa)/(xb-xa)) * (zb-za);
-                            if((zp < z_buffer[row][column]) && zp >= near_z && zp <= far_z){
-                                //update z_buffer and framebuffer
-                                z_buffer[row][column] = zp;
-                                //cout << "Color of triangle : " <<triangle.color.R << "," << triangle.color.G << "," << triangle.color.B << endl;
-                                frame_buffer[row][column] = triangle.color;
-                                //cout << "Color of frame buffer : " <<frame_buffer[row][column].R << "," << frame_buffer[row][column].G << "," << frame_buffer[row][column].B << endl;
-                            }
-                        }
 
-                    }//column for loop
-                }
-                else{
-                    for(int column = left_column; column >= right_column; column--){
-                        if(xb-xa == 0){
-                            continue;
-                        } else {
-                            double xp = LEFT_X + column * dx;
-                            double zp = za + ((xp-xa)/(xb-xa)) * (zb-za);
-                            if((zp < z_buffer[row][column]) && zp >= near_z && zp <= far_z){
-                                //update z_buffer and framebuffer
-                                z_buffer[row][column] = zp;
-                                //cout << "Color of triangle : " <<triangle.color.R << "," << triangle.color.G << "," << triangle.color.B << endl;
-                                frame_buffer[row][column] = triangle.color;
-                                //cout << "Color of frame buffer : " <<frame_buffer[row][column].R << "," << frame_buffer[row][column].G << "," << frame_buffer[row][column].B << endl;
-                            }
+                for(int column = left_column; column <= right_column; column++){
+                    if(xb-xa == 0){
+                        continue;
+                    } else {
+                        double xp = LEFT_X + column * dx;
+                        double zp = za + ((xp-xa)/(xb-xa)) * (zb-za);
+                        if((zp < z_buffer[row][column]) && zp >= near_z && zp <= far_z){
+                            //update z_buffer and framebuffer
+                            z_buffer[row][column] = zp;
+                            //cout << "Color of triangle : " <<triangle.color.R << "," << triangle.color.G << "," << triangle.color.B << endl;
+                            frame_buffer[row][column] = triangle.color;
+                            //cout << "Color of frame buffer : " <<frame_buffer[row][column].R << "," << frame_buffer[row][column].G << "," << frame_buffer[row][column].B << endl;
                         }
+                    }
 
-                    }//column for loop
-                }
+                }//column for loop
+
 
 
             } // row for loop
@@ -849,7 +850,9 @@ void handleStage4(){
 int main(){
     srand(time(0));
 
+
     /*********************************Stage 1*************************/
+
 
     openFilesStage1();
     insertIdentity();
@@ -893,6 +896,7 @@ int main(){
     inputFile.close();
     outputFile.close();
 
+
     /******************************************************************/
 
 
@@ -921,17 +925,13 @@ int main(){
 
 
 
+
     /************************Stage4***********************************/
     openFilesStage4();
     handleStage4();
 
-
-
     generateImage();
     printZBuffer();
-
-
-
 
     inputFile.close();
     outputFile.close();
