@@ -1,4 +1,5 @@
 #include<bits/stdc++.h>
+#include "bitmap_image.hpp"
 using namespace std;
 
 #define pi (2*acos(0.0))
@@ -11,10 +12,27 @@ struct point{
     double x,y,z;
 };
 
+struct Color{
+    int R,G,B;
+};
+
+struct Triangle{
+    point points[3];
+    Color color;
+};
+
 struct point eye,look,up;
 struct point translate,scale,rotation;
 struct point triangle1,triangle2,triangle3;
+struct Triangle triangle;
+struct Color color;
 double fovY, aspectRatio, near, far, rotationAngle;
+double left_x, right_x, top_y, bottom_y, near_z, far_z;
+int screen_width, screen_height;
+double top_scan_line, bottom_scan_line;
+double dx,dy, TOP_Y,LEFT_X;
+double** z_buffer;
+Color** frame_buffer;
 
 double identity[4][4] = {{1,0,0,0},{0,1,0,0},{0,0,1,0},{0,0,0,1}};
 
@@ -157,8 +175,101 @@ void multiplyMatrices(double** matrix, int arrSize){
     }
 }
 
+void initialize_z_buffer(){
+    z_buffer = new double*[screen_height];
+    for(int i=0;i<screen_height;i++)
+    {
+        z_buffer[i] = new double[screen_width];
+        for(int j=0;j<screen_width;j++)
+            z_buffer[i][j] = far_z;
+    }
+}
+
+void initialize_frame_buffer(){
+    Color color1 = {0,0,0};
+    frame_buffer = new Color*[screen_height];
+    for(int i=0;i<screen_height;i++)
+    {
+        frame_buffer[i] = new Color[screen_width];
+        for(int j=0;j<screen_width;j++)
+            frame_buffer[i][j] = color1; //initialize the matrix cells to 0
+    }
+}
+
+void printZBuffer(){
+    for(int i = 0; i < screen_height; i++){
+        for(int j = 0; j < screen_width; j++){
+            if(z_buffer[i][j] == far_z){
+                outputFile << "\t" << "\t";
+            } else {
+                outputFile << z_buffer[i][j] << "\t";
+            }
+        }
+        outputFile << "\n";
+    }
+
+}
+
+void generateImage(){
+    bitmap_image image(screen_width,screen_height);
+
+    for(int i=0;i<screen_width;i++){
+        for(int j=0;j<screen_height;j++){
+            image.set_pixel(i,j,frame_buffer[i][j].R,frame_buffer[i][j].G,frame_buffer[i][j].B);
+            //cout << frame_buffer[i][j].R<< ","<<frame_buffer[i][j].G<<","<<frame_buffer[i][j].B << " ";
+
+        }
+        //cout << endl;
+
+    }
+    image.save_image("out.bmp");
+
+}
+
+void free_z_buffer_memory(){
+    for (int i=0; i<screen_height; i++) {
+      free(z_buffer[i]);
+    }
+    free(z_buffer);
+}
+
+void free_frame_buffer_memory(){
+    for (int i=0; i<screen_height; ++i) {
+      free(frame_buffer[i]);
+    }
+    free(frame_buffer);
+}
+
+void processConfigFile(){
+
+    inputFile >> screen_width;
+    inputFile >> screen_height;
+    inputFile >> left_x;
+    right_x = -left_x;
+    inputFile >> bottom_y;
+    top_y = -bottom_y;
+    inputFile >> near_z;
+    inputFile >> far_z;
+
+
+    dx = (right_x - left_x)/screen_width;
+    dy = (top_y - bottom_y)/screen_height;
+
+    /*cout << "Height : " << screen_height << ", width : " << screen_width << endl;
+    cout << "dx : " << dx << ", dy : " << dy << endl;
+    cout << "top_y : " << top_y << ", bottom_y : " << bottom_y << endl;*/
+    TOP_Y = top_y-(dy/2);
+    LEFT_X = left_x + (dx/2);
+    //cout << "TOP_Y : " << TOP_Y << ", LEFT_X : " << LEFT_X << endl << endl<<endl;
+
+    //initialize z_buffer and frame_buffer
+    initialize_z_buffer();
+    initialize_frame_buffer();
+
+}
+
 void openFilesStage1(){
-    inputFile.open("4/scene.txt");
+    inputFile.open("1/scene.txt");
     outputFile.open("output/stage1.txt");
     if(!inputFile){
         cout << "Error Input" << endl;
@@ -194,6 +305,57 @@ void openFilesStage3(){
         cout << "Error Output" << endl;
         exit(1);
     }
+}
+
+void openFilesStage4(){
+    inputFile.open("1/config.txt");
+    //inputFile.open("config.txt");
+    if(!inputFile){
+        cout << "Error Input" << endl;
+        exit(1);
+    }
+    processConfigFile();
+    inputFile.close();
+
+    inputFile.open("output/stage3.txt");
+    //inputFile.open("stage3.txt");
+    outputFile.open("output/z-buffer.txt");
+    if(!inputFile){
+        cout << "Error Input" << endl;
+        exit(1);
+    }
+    if(!outputFile){
+        cout << "Error Output" << endl;
+        exit(1);
+    }
+}
+
+
+
+void setColor(){
+    triangle.color = {1 + (rand() % ( 255 - 0 + 1 )), 1 + (rand() % ( 255 - 0 + 1 )), 1 + (rand() % ( 255 - 0 + 1 ))};
+
+}
+
+void setTopBottomScanLine(int point){
+
+    double highest_y = max(max(triangle.points[point].y,triangle.points[point+1].y),triangle.points[point+2].y);
+    //cout << "Max y : " <<highest_y << endl;
+    if(highest_y > TOP_Y){
+        top_scan_line = TOP_Y;
+    } else {
+        top_scan_line = highest_y;
+    }
+
+    double lowest_y = min(min(triangle.points[point].y,triangle.points[point+1].y),triangle.points[point+2].y);
+    //cout << "Min y : " << lowest_y << endl;
+    if(lowest_y < (bottom_y+(dy/2))){
+        bottom_scan_line = (bottom_y+(dy/2));
+    } else {
+        bottom_scan_line = lowest_y;
+    }
+
+
 }
 
 void processPoint1(){
@@ -479,7 +641,213 @@ void handleStage3(){
 
 }
 
+
+void handleStage4(){
+    double val;
+    int position = 0;
+    int processed = 0;
+
+    double xa, xb, za, zb, x12,x23,x13,z12,z13,z23;
+
+
+    while(inputFile >> val){
+
+
+        if(processed < 3){
+            //keep reading
+
+            if(position == 0){
+                triangle.points[processed].x = val;
+            } else if(position == 1){
+                triangle.points[processed].y = val;
+            } else if(position == 2){
+                triangle.points[processed].z = val;
+            }
+            position += 1;
+
+            if(position == 3){
+                position = 0;
+                processed += 1;
+
+            }
+        }
+        if(processed == 3){
+            //we have our three points
+
+            processed = 0;
+            setTopBottomScanLine(0);
+            setColor();
+
+            //cout << "\nTop scan line : " << top_scan_line << ", bottom scan line : " << bottom_scan_line << endl << endl;
+            //cout << "TOP_Y -top_scan_line : " << top_scan_line  << ", dy : " << dy << endl<< endl;
+            //cout << (TOP_Y - top_scan_line) / dy << " " << (TOP_Y - bottom_scan_line) / dy << endl<< endl;
+            int firstRow = (TOP_Y - top_scan_line) / dy;
+            int lastRow = (TOP_Y - bottom_scan_line) / dy;
+
+            //cout << "First row : " << firstRow << ", last row : " << lastRow << endl;
+
+            for(int row = firstRow; row <= lastRow; row++){
+
+                double ys = TOP_Y - row * dy;
+                // suppose x12 is in between 1 and 2
+                x12 = triangle.points[0].x + ((ys - triangle.points[0].y)/(triangle.points[1].y - triangle.points[0].y)) * (triangle.points[1].x - triangle.points[0].x);
+                z12 = triangle.points[0].z + ((ys - triangle.points[0].y)/(triangle.points[1].y - triangle.points[0].y)) * (triangle.points[1].z - triangle.points[0].z);
+                // suppose x13 is in between 1 and 3
+                x13 = triangle.points[0].x + ((ys - triangle.points[0].y)/(triangle.points[2].y - triangle.points[0].y)) * (triangle.points[2].x - triangle.points[0].x);
+                z13 = triangle.points[0].z + ((ys - triangle.points[0].y)/(triangle.points[2].y - triangle.points[0].y)) * (triangle.points[2].z - triangle.points[0].z);
+                // suppose x23 is in between 2 and 3
+                x23 = triangle.points[1].x + ((ys - triangle.points[1].y)/(triangle.points[2].y - triangle.points[1].y)) * (triangle.points[2].x - triangle.points[1].x);
+                z23 = triangle.points[1].z + ((ys - triangle.points[1].y)/(triangle.points[2].y - triangle.points[1].y)) * (triangle.points[2].z - triangle.points[1].z);
+
+
+
+                if(isinf(x12) && !isinf(x13) && !isinf(x23)){
+                    // one point invalid, other two are valid
+                    xa = x13;
+                    za = z13;
+                    xb = x23;
+                    zb = z23;
+
+
+                }
+                else if(isinf(x13) && !isinf(x12) && !isinf(x23)){
+                    // one point invalid, other two are valid
+                    xa = x23;
+                    za = z23;
+                    xb = x12;
+                    zb = z12;
+
+                }
+                else if(isinf(x23) && !isinf(x12) && !isinf(x13)){
+                    // one point invalid, other two are valid
+                    xa = x12;
+                    za = z12;
+                    xb = x13;
+                    zb = z13;
+
+                }
+                else if(!isinf(x23) && !isinf(x12) && !isinf(x13)){
+                    // all points are valid, so two points are same
+                    if(x12 == x13){
+                        xa = x23;
+                        za = z23;
+                        xb = x12;
+                        zb = z12;
+
+
+                    }
+                    else if(x12 == x23){
+                        xa = x12;
+                        za = z12;
+                        xb = x13;
+                        zb = z13;
+
+                    }
+                    else if(x13 == x23){
+                        xa = x12;
+                        za = z12;
+                        xb = x13;
+                        zb = z13;
+
+                    }
+
+                }
+                else {
+                    // one point is valid, the topmost point
+                    if(!isinf(x12)){
+                        xa = x12;
+                        za = z12;
+                        xb = xa;
+                        zb = za;
+
+
+                    }
+                    else if(!isinf(x13)){
+                        xa = x12;
+                        za = z12;
+                        xb = xa;
+                        zb = za;
+
+                    }
+                    else if(!isinf(x23)){
+                        xa = x23;
+                        za = z23;
+                        xb = xa;
+                        zb = za;
+
+                    }
+                }
+
+                int left_column = round((LEFT_X - xa)/(-dx));
+                int right_column = round((LEFT_X - xb)/(-dx));
+
+
+                if(left_column < 0){
+                    left_column = 0;
+                }
+                if(right_column < 0){
+                    right_column = 0;
+                }
+                if(right_column > screen_width - 1){
+                    right_column = screen_width - 1;
+                }
+                if(left_column > screen_width - 1){
+                    left_column = screen_width - 1;
+                }
+
+                //cout << "Left_column : " << left_column << ", right_column : " << right_column << endl;
+                if(left_column < right_column){
+                    for(int column = left_column; column <= right_column; column++){
+                        if(xb-xa == 0){
+                            continue;
+                        } else {
+                            double xp = LEFT_X + column * dx;
+                            double zp = za + ((xp-xa)/(xb-xa)) * (zb-za);
+                            if((zp < z_buffer[row][column]) && zp >= near_z && zp <= far_z){
+                                //update z_buffer and framebuffer
+                                z_buffer[row][column] = zp;
+                                //cout << "Color of triangle : " <<triangle.color.R << "," << triangle.color.G << "," << triangle.color.B << endl;
+                                frame_buffer[row][column] = triangle.color;
+                                //cout << "Color of frame buffer : " <<frame_buffer[row][column].R << "," << frame_buffer[row][column].G << "," << frame_buffer[row][column].B << endl;
+                            }
+                        }
+
+                    }//column for loop
+                }
+                else{
+                    for(int column = left_column; column >= right_column; column--){
+                        if(xb-xa == 0){
+                            continue;
+                        } else {
+                            double xp = LEFT_X + column * dx;
+                            double zp = za + ((xp-xa)/(xb-xa)) * (zb-za);
+                            if((zp < z_buffer[row][column]) && zp >= near_z && zp <= far_z){
+                                //update z_buffer and framebuffer
+                                z_buffer[row][column] = zp;
+                                //cout << "Color of triangle : " <<triangle.color.R << "," << triangle.color.G << "," << triangle.color.B << endl;
+                                frame_buffer[row][column] = triangle.color;
+                                //cout << "Color of frame buffer : " <<frame_buffer[row][column].R << "," << frame_buffer[row][column].G << "," << frame_buffer[row][column].B << endl;
+                            }
+                        }
+
+                    }//column for loop
+                }
+
+
+            } // row for loop
+
+
+        } // if processed 3
+
+    } // while loop
+
+
+}
+
+
+
 int main(){
+    srand(time(0));
 
     /*********************************Stage 1*************************/
 
@@ -541,6 +909,7 @@ int main(){
     /*****************************************************************/
 
 
+
     /************************Stage3***********************************/
     openFilesStage3();
     handleStage3();
@@ -549,6 +918,30 @@ int main(){
     outputFile.close();
 
     /*****************************************************************/
+
+
+
+    /************************Stage4***********************************/
+    openFilesStage4();
+    handleStage4();
+
+
+
+    generateImage();
+    printZBuffer();
+
+
+
+
+    inputFile.close();
+    outputFile.close();
+
+    free_frame_buffer_memory();
+    free_z_buffer_memory();
+
+    /*****************************************************************/
+
+
 
 
     return 0;
