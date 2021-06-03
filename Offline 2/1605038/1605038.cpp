@@ -217,6 +217,7 @@ void generateImage(){
         }
     }
     image.save_image("out.bmp");
+    image.clear();
 
 }
 
