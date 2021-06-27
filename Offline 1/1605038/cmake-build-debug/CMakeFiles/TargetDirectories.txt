@@ -1,0 +1,3 @@
+D:/Academics/4-1/Lab/Computer-Graphics-Sessional-CSE-410/Offline 1/1605038/cmake-build-debug/CMakeFiles/1605038.dir
+D:/Academics/4-1/Lab/Computer-Graphics-Sessional-CSE-410/Offline 1/1605038/cmake-build-debug/CMakeFiles/edit_cache.dir
+D:/Academics/4-1/Lab/Computer-Graphics-Sessional-CSE-410/Offline 1/1605038/cmake-build-debug/CMakeFiles/rebuild_cache.dir

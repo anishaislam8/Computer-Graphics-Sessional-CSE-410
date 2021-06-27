@@ -212,9 +212,8 @@
 1301111156 c:\program files (x86)\codeblocks\mingw\include\oleidl.h
 	<objfwd.h>
 
-983683986 c:\program files (x86)\codeblocks\mingw\include\gl\glut.h
+1623270729 c:\program files (x86)\codeblocks\mingw\include\gl\glut.h
 	<windows.h>
-	<stdlib.h>
 	<GL/gl.h>
 	<GL/glu.h>
 
@@ -226,4 +225,13 @@
 
 1341006774 c:\program files (x86)\codeblocks\mingw\include\math.h
 	<_mingw.h>
+
+1623270729 source:d:\academics\4-1\lab\computer-graphics-sessional-cse-410\offline 1\1605038\main.cpp
+	<windows.h>
+	<GLUT/glut.h>
+	<GL/glut.h>
+	<iostream>
+	<stdlib.h>
+	<math.h>
+	<vector>
 

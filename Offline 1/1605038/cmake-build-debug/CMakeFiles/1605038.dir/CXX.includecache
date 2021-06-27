@@ -1,0 +1,24 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+D:/Academics/4-1/Lab/Computer-Graphics-Sessional-CSE-410/Offline 1/1605038/main.cpp
+windows.h
+-
+GLUT/glut.h
+-
+GL/glut.h
+-
+iostream
+-
+stdlib.h
+-
+math.h
+-
+vector
+-
+
