@@ -2,12 +2,34 @@
 #define pi (2*acos(0.0))
 #include <vector>
 #include<math.h>
-
+#include <iostream>
+using namespace std;
 
 struct point
 {
 	double x,y,z;
 };
+
+
+/***********************Ray********************/
+
+double dotProduct(struct point a, struct point b){
+    //cout << "dot : " << a.x*b.x + a.y*b.y + a.z*b.z << endl;
+    return a.x*b.x + a.y*b.y + a.z*b.z;
+}
+
+class Ray {
+public:
+    struct point start;
+    struct point dir;
+
+    Ray(struct point start, struct point dir){
+        this->dir = dir; // already normalized
+        this->start = start;
+    }
+};
+
+/***********************Object********************/
 
 class Object {
 public:
@@ -18,6 +40,10 @@ public:
     int shine; // exponent term of specular component
     Object(){};
     virtual void draw(){};
+    virtual double intersect(Ray *r, double *color, int level){
+        return -1.0;
+    }
+
     void setColor(double newColor[]){
         for(int i = 0; i < 3; i++){
             color[i] = newColor[i];
@@ -35,6 +61,9 @@ public:
     struct point trianglePoints[3];
 };
 
+
+/***********************Triangle********************/
+
 class Triangle : public Object {
 public:
     Triangle(struct point newTrianglePoints[3]){
@@ -43,6 +72,7 @@ public:
         }
     }
     void draw();
+    double intersect(Ray *r, double *color, int level);
 };
 
 void Triangle::draw(){
@@ -55,6 +85,13 @@ void Triangle::draw(){
 
 }
 
+double Triangle::intersect(Ray *r, double *color, int level){
+
+}
+
+
+/***********************General Shapes********************/
+
 class General : public Object {
 public:
     General(struct point ref_point, double length, double width, double height){
@@ -64,10 +101,18 @@ public:
         reference_point= ref_point;
     }
     void draw();
+    double intersect(Ray *r, double *color, int level);
 };
 
 void General::draw(){
 }
+
+double General::intersect(Ray *r, double *color, int level){
+}
+
+
+
+/***********************Sphere********************/
 
 class Sphere : public Object {
 public:
@@ -76,7 +121,44 @@ public:
         length = radius;
     }
     void draw();
+    double intersect(Ray *r, double *color, int level);
 };
+
+
+double Sphere::intersect(Ray *r, double *color, int level){
+    //cout << "called" << endl;
+    struct point R0 = {
+        r->start.x - reference_point.x,
+        r->start.y - reference_point.y,
+        r->start.z - reference_point.z
+
+    };
+    //cout << "R0 : " << R0.x << " " << R0.y << " " << R0.z << endl;
+    //cout << "Check " << r->start.x << endl;
+    double a = 1.0;
+    //cout << "dir : " << r->dir.x << " " << r->dir.y << " " << r->dir.z << endl;
+    double b = 2.0 * dotProduct(R0, r->dir);
+    //cout << "b : " << b << endl;
+    double c = dotProduct(R0, R0) - length * length;
+     //cout << "c : " << c << endl;
+
+    double discriminant = b*b - 4*a*c;
+    //cout << "d : " << discriminant << endl;
+    if(discriminant < 0){
+        return -1.0;
+    } else {
+        double t1 = (-b + sqrt(discriminant))/(2.0 * a);
+        double t2 = (-b - sqrt(discriminant))/(2.0 * a);
+        if(t1 < 0 && t2 < 0){
+            return -1.0;
+        } else if(t1 >= 0 && t2 >= 0){
+            return t2;
+        } else if(t2 < 0){
+            return t1;
+        }
+    }
+
+}
 
 void Sphere::draw(){
     glTranslatef(reference_point.x, reference_point.y, reference_point.z);
@@ -127,6 +209,7 @@ void Sphere::draw(){
 }
 
 
+/***********************Light********************/
 
 class Light{
 public:
@@ -153,6 +236,8 @@ void Light::draw(){
 }
 
 
+/***********************Floor********************/
+
 class Floor: public Object{
 public:
 
@@ -162,6 +247,7 @@ public:
         length=tileWidth;
     }
     void draw();
+    double intersect(Ray *r, double *color, int level);
 };
 
 void Floor::draw(){
@@ -195,4 +281,9 @@ void Floor::draw(){
 
 	glTranslatef(-reference_point.x, -reference_point.y, -reference_point.z);
 }
+
+double Floor::intersect(Ray *r, double *color, int level){
+}
+
+
 

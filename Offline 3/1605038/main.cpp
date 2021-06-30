@@ -13,6 +13,9 @@
 #define pi (2*acos(0.0))
 #include <vector>
 #include "1605038_classes.h"
+#include "bitmap_image.hpp"
+
+
 using namespace std;
 
 
@@ -22,6 +25,10 @@ int drawgrid;
 int drawaxes;
 double angle;
 double rotationAngle;
+double viewAngle = 80;
+double windowHeight= 500.0;
+double windowWidth = 500.0;
+int imageHeight, imageWidth;
 
 int recursionLevel;
 int pixels;
@@ -47,11 +54,116 @@ double degreeToradian(double r){
     return (r * pi)/180;
 }
 
-
-
 double valueOfAVector(point a){
     return sqrt(a.x*a.x + a.y*a.y + a.z*a.z);
 }
+
+void capture(){ // hopefully done :3
+
+    bitmap_image image(imageWidth,imageHeight);
+
+    for(int i=0;i<imageWidth;i++){
+        for(int j=0;j<imageHeight;j++){
+            image.set_pixel(i,j,0,0,0); // 2nd ta row increment, amar row to j
+        }
+    }
+
+    double planeDistance = (windowHeight/2) / (tan(degreeToradian(viewAngle/2)));
+  /*cout << "pos : " << pos.x << " " << pos.y << " " << pos.z << endl;
+  cout << "u : " << u.x << " " << u.y << " " << u.z << endl;
+  cout << "l : " << l.x << " " << l.y << " " << l.z << endl;
+  cout << "r : " << r.x << " " << r.y << " " << r.z << endl;*/
+    struct point topleft = {
+        pos.x + l.x*planeDistance - r.x*(windowWidth/2) + u.x * (windowHeight/2),
+        pos.y + l.y*planeDistance - r.y*(windowWidth/2) + u.y * (windowHeight/2),
+        pos.z + l.z*planeDistance - r.z*(windowWidth/2) + u.z * (windowHeight/2)
+    };
+    //cout << "topleft : " << topleft.x << " " << topleft.y << " " << topleft.z << endl;
+    double du = (1.0 * windowWidth)/ (1.0 *imageWidth);
+
+    double dv = (1.0 * windowHeight)/ (1.0 * imageHeight);
+
+    //cout << "du : " << du<< " dv : " << dv << endl;
+
+    //choose the middle of the grid cell
+    topleft = {
+        topleft.x + r.x * (0.5 * du) - u.x * (0.5 * dv),
+        topleft.y + r.y * (0.5 * du) - u.y * (0.5 * dv),
+        topleft.z + r.z * (0.5 * du) - u.z * (0.5 * dv)
+    };
+    //cout << "topleft : " << topleft.x << " " << topleft.y << " " << topleft.z << endl;
+    int nearest;
+    double t;
+    double tmin;
+    for (int i = 0; i< imageWidth; i++ ){
+        for(int j = 0; j < imageHeight; j++){
+            // calculate curPixel using topleft,r,u,i,j,du,dv
+            tmin = INT_MAX;
+            struct point currentPixel = {
+                topleft.x + r.x * i * du - u.x * j * dv,
+                topleft.y + r.y * i * du - u.y * j * dv,
+                topleft.z + r.z * i * du - u.z * j * dv
+            };
+
+            //cout << "currentPixel : " << currentPixel.x << " " << currentPixel.y << " " << currentPixel.z << endl;
+            // cast ray from eye to (curPixel-eye) direction
+            struct point direction = {
+                currentPixel.x - pos.x,
+                currentPixel.y - pos.y,
+                currentPixel.z - pos.z,
+            };
+            //cout << "direction : " << direction.x << " " << direction.y << " " << direction.z << endl;
+            double valueOfDirection = valueOfAVector(direction);
+            //cout << "value : " << valueOfDirection << endl;
+            direction ={
+                direction.x/valueOfDirection,
+                direction.y/valueOfDirection,
+                direction.z/valueOfDirection
+            };
+
+            Ray * r;
+            r = new Ray(pos, direction);
+            /*if(i ==0 && j == 0){
+                 cout << "direction : " << direction.x << " " << direction.y << " " << direction.z << endl;
+            }*/
+
+            double *color = new double[3];
+            // for each object, o in objects
+            Object *nearestObject = NULL;
+            //cout << objects.size() << endl;
+            for(int k = 0; k < objects.size(); k++){
+                //t = o.intersect(ray, dummyColor, 0)
+                t = objects[k]->intersect(r, color, 0);
+                //cout << t << endl;
+                //update t so that it stores min +ve value
+                //save the nearest object, on
+                if(t > 0 && t < tmin){
+                    nearestObject = objects[k];
+                    tmin = t;
+                }
+
+
+            }
+            if(nearestObject){
+                    //cout << "came here" << endl;
+
+                tmin = nearestObject->intersect(r, nearestObject->color, 1);//can change :3
+                //update image pixel (i,j)
+                //cout << "pixel " << i << "," << j << endl;
+                //cout << nearestObject->color[0] << " " << nearestObject->color[1] << " " << nearestObject->color[2] << endl;
+                image.set_pixel(i,j,nearestObject->color[0] * 255,nearestObject->color[1] * 255,nearestObject->color[2] * 255);
+            }
+
+
+
+        }
+    }
+    image.save_image("D:\\Academics\\4-1\\Lab\\Computer-Graphics-Sessional-CSE-410\\Offline 3\\1605038\\out.bmp");
+    //cout << "Here !!!" << endl;
+    //image.clear();
+}
+
+
 
 point crossProduct(point a, point b){
     /*cx = aybz − azby
@@ -117,7 +229,10 @@ void keyboardListener(unsigned char key, int x,int y){
     double sinTheta = sin(degreeToradian(rotationAngle));
 
 	switch(key){
-
+        case '0':{
+            capture();
+            break;
+        }
 		case '1':
 			{
 			    //look left
@@ -502,7 +617,7 @@ void animate(){
 }
 
 void loadSphereData(){
-
+    //cout << "called loadspheredata" << endl;
     struct point center;
     double radius;
     double color[3];
@@ -561,6 +676,8 @@ void loadSphereData(){
     objects.push_back(temp);
 
 
+    //capture();
+   //cout << "????" << endl;
     //cout << temp->reference_point.x << " " << temp->reference_point.y <<" " << temp->reference_point.z << endl;
 
 }
@@ -790,6 +907,8 @@ void loadData(){
     inputFile >> recursionLevel;
     inputFile >> pixels;
     inputFile >> numberOfObjects;
+    imageHeight = (int) pixels;
+    imageWidth = (int) pixels;
 
 
 
@@ -823,14 +942,6 @@ void loadData(){
 void init(){
 	//codes for initialization
 
-	inputFile.open("D:\\Academics\\4-1\\Lab\\Computer-Graphics-Sessional-CSE-410\\Offline 3\\1605038\\scene.txt");
-	if(!inputFile){
-        cout << "Error Input" << endl;
-        exit(1);
-    }
-    loadData();
-
-
 	drawgrid=0;
 	drawaxes=1;
 	cameraHeight=150.0;
@@ -856,7 +967,7 @@ void init(){
 	glLoadIdentity();
 
 	//give PERSPECTIVE parameters
-	gluPerspective(80,	1,	1,	1000.0);
+	gluPerspective(viewAngle,	1,	1,	1000.0);
 	//field of view in the Y (vertically)
 	//aspect ratio that determines the field of view in the X direction (horizontally)
 	//near distance
@@ -866,8 +977,16 @@ void init(){
 }
 
 int main(int argc, char **argv){
+
+    inputFile.open("D:\\Academics\\4-1\\Lab\\Computer-Graphics-Sessional-CSE-410\\Offline 3\\1605038\\scene.txt");
+	if(!inputFile){
+        cout << "Error Input" << endl;
+        exit(1);
+    }
+
+
 	glutInit(&argc,argv);
-	glutInitWindowSize(500, 500);
+	glutInitWindowSize(windowHeight, windowWidth);
 	glutInitWindowPosition(0, 0);
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGB);	//Depth, Double buffer, RGB color
 
@@ -875,6 +994,7 @@ int main(int argc, char **argv){
 
 
 	init();
+	loadData();
 
 	glEnable(GL_DEPTH_TEST);	//enable Depth Testing
 
