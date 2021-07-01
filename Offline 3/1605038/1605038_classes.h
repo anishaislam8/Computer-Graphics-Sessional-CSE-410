@@ -897,25 +897,32 @@ double Sphere::intersect(Ray *r, double *finalColor, int level){
             reflectedDirection.z/valueOfReflected
         };
 
-
         Ray * rReflected;
+
         struct point startingPositionReflected = {
             intersectionPoint.x + reflectedDirection.x * 0.0000000001,
             intersectionPoint.y + reflectedDirection.y * 0.0000000001,
             intersectionPoint.z + reflectedDirection.z * 0.0000000001
         };
+
         rReflected = new Ray(startingPositionReflected, reflectedDirection);
+
         double tMinReflected = INT_MAX;
         double tReflected;
         double *colorReflected = new double[3];
+
+
         // for each object, o in objects
         Object *nearestIntersecting= NULL;
+
+
         for(int obj = 0;  obj < objects.size(); obj++){
             tReflected = objects[obj]->intersect(rReflected, colorReflected, 0);
             if(tReflected >= 0 && tReflected < tMinReflected){
                 nearestIntersecting = objects[obj];
                 tMinReflected = tReflected;
             }
+
 
 
         }
@@ -927,6 +934,8 @@ double Sphere::intersect(Ray *r, double *finalColor, int level){
 
             clipcolor(finalColor);
         }
+
+
 
 
     }

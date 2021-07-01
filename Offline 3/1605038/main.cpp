@@ -141,7 +141,10 @@ void capture(){ // hopefully done :3
 
         }
     }
-    image.save_image("D:\\Academics\\4-1\\Lab\\Computer-Graphics-Sessional-CSE-410\\Offline 3\\1605038\\out.bmp");
+    string fullPath = __FILE__;
+    string dir_path = fullPath.substr(0, fullPath.rfind("\\"));
+    string filename=dir_path+"\\output.bmp";
+    image.save_image(filename);
     cout << "Done !!!" << endl;
     image.clear();
 }
@@ -891,7 +894,7 @@ void loadData(){
     coefficients[3]= 0.2;
 
     temp->setCoEfficients(coefficients);
-    temp->setShine(15);
+    temp->setShine(5);
     objects.push_back(temp);
 
     //cout << objects.size() << endl;
@@ -937,8 +940,11 @@ void init(){
 }
 
 int main(int argc, char **argv){
+    string fullPath = __FILE__;
+    string dir_path = fullPath.substr(0, fullPath.rfind("\\"));
+    string filename=dir_path+"\\scene.txt";
 
-    inputFile.open("D:\\Academics\\4-1\\Lab\\Computer-Graphics-Sessional-CSE-410\\Offline 3\\1605038\\scene.txt");
+    inputFile.open(filename);
 	if(!inputFile){
         cout << "Error Input" << endl;
         exit(1);
