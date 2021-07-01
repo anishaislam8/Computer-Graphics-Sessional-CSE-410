@@ -142,7 +142,7 @@ void capture(){ // hopefully done :3
         }
     }
     image.save_image("D:\\Academics\\4-1\\Lab\\Computer-Graphics-Sessional-CSE-410\\Offline 3\\1605038\\out.bmp");
-    cout << "Here !!!" << endl;
+    cout << "Done !!!" << endl;
     image.clear();
 }
 
@@ -814,14 +814,7 @@ void loadGeneralShapeData(){
     }
     A = aToJ[0]; B = aToJ[1]; C = aToJ[2]; D = aToJ[3]; E = aToJ[4]; F = aToJ[5]; G = aToJ[6]; H = aToJ[7]; I = aToJ[8]; J = aToJ[9];
 
-
-    /*cout << "a-j" <<endl;
-    for(int j = 0; j < 10; j++){
-        cout << aToJ[j] << " ";
-    }
-    cout << endl;*/
-
-
+    //cout << A << " " << B << " " << C << " " << D <<" " << E <<" " << F <<" " << G <<" " << H <<" "<< I <<" " << J <<endl;
     //reference Point + length, width, height
     double arr1[6];
     for(int m= 0; m < 6; m++) {
@@ -834,32 +827,18 @@ void loadGeneralShapeData(){
     width = arr1[4];
     height = arr1[5];
 
-    /*cout << "ref point length width height" <<endl;
-    for(int j = 0; j < 6; j++){
-        cout << arr1[j] << " ";
-    }
-    cout << endl;*/
+
 
     for(int m = 0; m < 3;  m++){
         inputFile >> val;
         color[m] = val;
     }
-    /*cout << "color" <<endl;
-    for(int j = 0; j < 3; j++){
-        cout << color[j] << " ";
-    }
-    cout << endl;*/
 
     //coeffiecients
     for(int m = 0; m < 4; m++){
         inputFile >> val;
         coefficients[m] = val;
     }
-    /*cout << "coeff" <<endl;
-    for(int j = 0; j < 4; j++){
-        cout << coefficients[j] << " ";
-    }
-    cout << endl;*/
 
     //shininess
     inputFile >> val;
@@ -905,6 +884,14 @@ void loadData(){
     //floor
     Object *temp;
     temp = new Floor(1000,20);
+    double coefficients[4];
+    coefficients[0]= 0.2;
+    coefficients[1]= 0.2;
+    coefficients[2]= 0.4;
+    coefficients[3]= 0.2;
+
+    temp->setCoEfficients(coefficients);
+    temp->setShine(15);
     objects.push_back(temp);
 
     //cout << objects.size() << endl;
@@ -922,8 +909,8 @@ void init(){
 	angle=0;
     rotationAngle = 5.0;
 
-
-    pos = {100,100,0};
+    //100,100,0 chhilo initially
+    pos = {100,100,10};
     u = {0,0,1};
     r = {-1/sqrt(2),1/sqrt(2),0};
     l = {-1/sqrt(2),-1/sqrt(2),0};

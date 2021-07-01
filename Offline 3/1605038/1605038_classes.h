@@ -25,6 +25,14 @@ double valueOfAVector(point a){
     return sqrt(a.x*a.x + a.y*a.y + a.z*a.z);
 }
 
+void clipcolor(double *finalColor){
+    if(finalColor[0] > 1) finalColor[0] = 1.0;
+    if(finalColor[0] < 0) finalColor[0] = 0.0;
+    if(finalColor[1] > 1) finalColor[1] = 1.0;
+    if(finalColor[1] < 0) finalColor[1] = 0.0;
+    if(finalColor[2] > 1) finalColor[2] = 1.0;
+    if(finalColor[2] < 0) finalColor[2] = 0.0;
+}
 
 point crossProduct(point a, point b){
     /*cx = aybz − azby
@@ -163,6 +171,7 @@ double Triangle::intersect(Ray *r, double *finalColor, int level){
     a = dotProduct(edge1,h);
     if (a > -EPSILON && a < EPSILON){
         t =  -1.0;    // This ray is parallel to this triangle.
+        return t;
     }
     else {
         f = 1.0/a;
@@ -174,12 +183,14 @@ double Triangle::intersect(Ray *r, double *finalColor, int level){
         u = f * dotProduct(s,h);
         if (u < 0.0 || u > 1.0){
             t =  -1.0;
+            return t;
         }
         else {
             q = crossProduct(s,edge1);
             v = f * dotProduct(r->dir,q);
             if (v < 0.0 || u + v > 1.0){
                 t = -1.0;
+                return t;
             }
             else {
                 // At this stage we can compute t to find out where the intersection point is on the line.
@@ -195,6 +206,7 @@ double Triangle::intersect(Ray *r, double *finalColor, int level){
                 }
                 else {// This means that there is a line intersection but not a ray intersection.
                     t = -1.0;
+                    return t;
                 }
             }
 
@@ -209,7 +221,7 @@ double Triangle::intersect(Ray *r, double *finalColor, int level){
         //cout << "triangle" << t << endl;
         return t;
     } else {
-        //cout << "intersectionPoint : " << intersectionPoint.x << " " << intersectionPoint.y << " " << intersectionPoint.z << endl;
+
         double *intersectionPointColor;
         intersectionPointColor = new double[3];
         for(int i = 0; i < 3; i++){
@@ -220,6 +232,7 @@ double Triangle::intersect(Ray *r, double *finalColor, int level){
         for(int i = 0; i < 3; i++){
              finalColor[i] = intersectionPointColor[i] * coEfficients[0];
         }
+        clipcolor(finalColor);
         //cout << "final color : " << finalColor[0] << " " << finalColor[1] << " " << finalColor[2] << endl;
         //calculate normal at intersection point
         struct point normal = crossProduct(edge1, edge2);
@@ -231,14 +244,11 @@ double Triangle::intersect(Ray *r, double *finalColor, int level){
             normal.y/normalVectorValue,
             normal.z/normalVectorValue
         };
-        //cout << "normal : " << normal.x << " " << normal.y << " " << normal.z << endl;
+
          for(int m = 0; m < lights.size(); m++){
-            //cout << "Light " << m+1 << endl;
             double tNew;
             double tMinNew;
 
-
-            // cast ray from eye to (curPixel-eye) direction
             struct point direction = {
                 lights[m].light_pos.x - intersectionPoint.x,
                 lights[m].light_pos.y - intersectionPoint.y,
@@ -301,9 +311,9 @@ double Triangle::intersect(Ray *r, double *finalColor, int level){
                 // calculate V
 
                 struct point V = {
-                    r->start.x - intersectionPoint.x,
-                    r->start.y - intersectionPoint.y,
-                    r->start.z - intersectionPoint.z
+                    -(r->dir.x) ,
+                    -(r->dir.y) ,
+                    -(r->dir.z)
                 };
 
                 double valueOfV = valueOfAVector(V);
@@ -322,56 +332,70 @@ double Triangle::intersect(Ray *r, double *finalColor, int level){
                 finalColor[1] = finalColor[1] + lights[m].color[1] * coEfficients[1] * lambertComponent * intersectionPointColor[1];
                 finalColor[2] = finalColor[2] + lights[m].color[2] * coEfficients[1] * lambertComponent * intersectionPointColor[2];
 
-
+                clipcolor(finalColor);
                 // calculate specular component
                 double phongComponent = max(pow(dotProduct(R,V),shine),0.0);
                 finalColor[0] = finalColor[0] + lights[m].color[0] * coEfficients[2] * phongComponent;
                 finalColor[1] = finalColor[1] + lights[m].color[1] * coEfficients[2] * phongComponent;
                 finalColor[2] = finalColor[2] + lights[m].color[2] * coEfficients[2] * phongComponent;
 
-
-                if(level >= recursionLevel){
-                   return t;
-                }
-                Ray * rReflected;
-                struct point startingPositionReflected = {
-                    intersectionPoint.x + R.x * 0.0000000001,
-                    intersectionPoint.y + R.y * 0.0000000001,
-                    intersectionPoint.z + R.z * 0.0000000001
-                };
-                rReflected = new Ray(startingPositionReflected, R);
-                double tMinReflected = INT_MAX;
-                double tReflected;
-                double *colorReflected = new double[3];
-                // for each object, o in objects
-                Object *nearestIntersecting= NULL;
-                for(int obj = 0;  obj < objects.size(); obj++){
-                    tReflected = objects[obj]->intersect(rReflected, colorReflected, 0);
-                    if(tReflected >= 0 && tReflected < tMinReflected){
-                        nearestIntersecting = objects[obj];
-                        tMinReflected = tReflected;
-                    }
-
-
-                }
-                if(nearestIntersecting){
-                    tMinReflected = nearestIntersecting->intersect(rReflected, colorReflected,level+1);
-                    finalColor[0] = finalColor[0] + colorReflected[0] * coEfficients[3] ;
-                    finalColor[1] = finalColor[1] + colorReflected[1] * coEfficients[3] ;
-                    finalColor[2] = finalColor[2] + colorReflected[2] * coEfficients[3] ;
-                }
-
-
-                if(finalColor[0] > 1) finalColor[0] = 1.0;
-                if(finalColor[0] < 0) finalColor[0] = 0.0;
-                if(finalColor[1] > 1) finalColor[1] = 1.0;
-                if(finalColor[1] < 0) finalColor[1] = 0.0;
-                if(finalColor[2] > 1) finalColor[2] = 1.0;
-                if(finalColor[2] < 0) finalColor[2] = 0.0;
+                clipcolor(finalColor);
 
             }
 
 
+        }
+
+        if(level >= recursionLevel){
+           return t;
+        }
+
+        struct point dNew = r->dir;
+
+        double dNewDotNormal = dotProduct(dNew,normal);
+        struct point reflectedDirection = {
+            dNew.x - 2 * dNewDotNormal * normal.x,
+            dNew.y - 2 * dNewDotNormal * normal.y,
+            dNew.z - 2 * dNewDotNormal * normal.z,
+
+        };
+
+        double valueOfReflected = valueOfAVector(reflectedDirection);
+        reflectedDirection = {
+            reflectedDirection.x/valueOfReflected ,
+            reflectedDirection.y/valueOfReflected ,
+            reflectedDirection.z/valueOfReflected
+        };
+
+
+        Ray * rReflected;
+        struct point startingPositionReflected = {
+            intersectionPoint.x + reflectedDirection.x * 0.0000000001,
+            intersectionPoint.y + reflectedDirection.y * 0.0000000001,
+            intersectionPoint.z + reflectedDirection.z * 0.0000000001
+        };
+        rReflected = new Ray(startingPositionReflected, reflectedDirection);
+        double tMinReflected = INT_MAX;
+        double tReflected;
+        double *colorReflected = new double[3];
+        // for each object, o in objects
+        Object *nearestIntersecting= NULL;
+        for(int obj = 0;  obj < objects.size(); obj++){
+            tReflected = objects[obj]->intersect(rReflected, colorReflected, 0);
+            if(tReflected >= 0 && tReflected < tMinReflected){
+                nearestIntersecting = objects[obj];
+                tMinReflected = tReflected;
+            }
+
+
+        }
+        if(nearestIntersecting){
+            tMinReflected = nearestIntersecting->intersect(rReflected, colorReflected,level+1);
+            finalColor[0] = finalColor[0] + colorReflected[0] * coEfficients[3] ;
+            finalColor[1] = finalColor[1] + colorReflected[1] * coEfficients[3] ;
+            finalColor[2] = finalColor[2] + colorReflected[2] * coEfficients[3] ;
+
+            clipcolor(finalColor);
         }
 
          //cout << "final color : " << finalColor[0] << " " << finalColor[1] << " " << finalColor[2] << endl;
@@ -391,14 +415,281 @@ public:
         reference_point= ref_point;
     }
     void draw();
+    bool valid(double t, Ray *r);
     double intersect(Ray *r, double *color, int level);
 };
 
 void General::draw(){
 }
 
-double General::intersect(Ray *r, double *color, int level){
+bool General::valid(double t, Ray *r){
+    struct point intersectionPoint= {
+        r->start.x + r->dir.x * t,
+        r->start.y + r->dir.y * t,
+        r->start.z + r->dir.z * t
+    };
+    if(abs(length) > 0){
+        if(intersectionPoint.x < reference_point.x ||  intersectionPoint.x > reference_point.x + length){
+            return false;
+        }
+    }
+    if(abs(width) > 0){
+        if(intersectionPoint.y < reference_point.y ||  intersectionPoint.y > reference_point.y + width){
+            return false;
+        }
+    }
+    if(abs(height) > 0){
+        if(intersectionPoint.z < reference_point.z ||  intersectionPoint.z > reference_point.z + height){
+            return false;
+        }
+    }
+
+    return true;
 }
+
+double General::intersect(Ray *r, double *finalColor, int level){
+    double t;
+
+    //struct point R0 = r->start;
+
+    struct point R0 = {r->start.x, r->start.y, r->start.z};
+
+    double a = A*pow(r->dir.x,2) + B*pow(r->dir.y,2) + C*pow(r->dir.z,2);
+    a += D * r->dir.x * r->dir.y + F * r->dir.y * r->dir.z + E * r->dir.x * r->dir.z;
+    double b = 2*A*R0.x*r->dir.x + 2*B*R0.y*r->dir.y + 2*C*R0.z*r->dir.z;
+    b += D*(R0.x*r->dir.y + R0.y*r->dir.x) + F*(R0.y*r->dir.z + R0.z*r->dir.y) + E*(R0.z*r->dir.x + R0.x*r->dir.z);
+    b += G*r->dir.x + H*r->dir.y + I*r->dir.z;
+    double c = A*pow(R0.x,2) + B*pow(R0.y,2) + C*pow(R0.z,2);
+    c+= D*R0.x*R0.y + F*R0.y*R0.z + E*R0.x*R0.z;
+    c+= G*R0.x + H*R0.y + I*R0.z + J;
+
+
+    double discriminant = b*b - 4*a*c;
+    if(discriminant < 0){
+        t = -1.0;
+        return t;
+    } else {
+        double t1 = (-b + sqrt(discriminant))/(2.0 * a);
+        double t2 = (-b - sqrt(discriminant))/(2.0 * a);
+        double temp;
+        if(t1 < t2){
+            temp = t1;
+            t1 = t2;
+            t2 = temp;
+        }
+
+        if(t1 < 0 && t2 < 0){
+            t= -1.0;
+            return t;
+        } else if(t2 >= 0 && valid(t2,r)){
+            t = t2;
+
+        } else if(t1 >= 0 && valid(t1,r)){
+            t = t1;
+
+        } else {
+            return -1.0;
+        }
+    }
+
+    if (level == 0){
+        return t;
+    }
+    else {
+        struct point intersectionPoint= {
+            r->start.x + r->dir.x * t,
+            r->start.y + r->dir.y * t,
+            r->start.z + r->dir.z * t
+        };
+
+
+        //cout << "Intersection Point : " << intersectionPoint.x << " " << intersectionPoint.y << " " << intersectionPoint.z << endl;
+        double *intersectionPointColor;
+        intersectionPointColor = new double[3];
+        for(int i = 0; i < 3; i++){
+            intersectionPointColor[i] = color[i];
+        }
+
+
+        for(int i = 0; i < 3; i++){
+             finalColor[i] = intersectionPointColor[i] * coEfficients[0];
+        }
+        clipcolor(finalColor);
+        //cout << "final color : " << finalColor[0] << " " << finalColor[1] << " " << finalColor[2] << endl;
+        //calculate normal at intersection point
+        struct point normal = {
+            2*A*intersectionPoint.x + D*intersectionPoint.y + E*intersectionPoint.z + G,
+            2*B*intersectionPoint.y + D*intersectionPoint.x + F*intersectionPoint.z + H,
+            2*C*intersectionPoint.z + F*intersectionPoint.y + E*intersectionPoint.x + I
+        };
+
+        double normalVectorValue = valueOfAVector(normal);
+
+        normal = {
+            normal.x/normalVectorValue,
+            normal.y/normalVectorValue,
+            normal.z/normalVectorValue
+        };
+
+         for(int m = 0; m < lights.size(); m++){
+            double tNew;
+            double tMinNew;
+
+            struct point direction = {
+                lights[m].light_pos.x - intersectionPoint.x,
+                lights[m].light_pos.y - intersectionPoint.y,
+                lights[m].light_pos.z - intersectionPoint.z,
+            };
+
+            double valueOfDirection = valueOfAVector(direction);
+
+            direction ={
+                direction.x/valueOfDirection,
+                direction.y/valueOfDirection,
+                direction.z/valueOfDirection
+            };
+            //cout << "direction : " << direction.x << " " << direction.y << " " << direction.z << endl;
+            Ray * rNew;
+            struct point startingPosition = {
+                intersectionPoint.x + direction.x * 0.0000000001,
+                intersectionPoint.y + direction.y * 0.0000000001,
+                intersectionPoint.z + direction.z * 0.0000000001
+            };
+            rNew = new Ray(startingPosition, direction);
+
+
+            tMinNew = INT_MAX;
+            double *colorNew = new double[3];
+            // for each object, o in objects
+            for(int k = 0; k < objects.size(); k++){
+                tNew = objects[k]->intersect(rNew, colorNew, 0);
+                if(tNew >= 0 && tNew < tMinNew){
+                    tMinNew = tNew;
+                }
+
+
+            }
+
+            if(tMinNew >= t){
+                //calculate R  // r=d−2(d⋅n)n
+                struct point d = {
+                    -direction.x,
+                    -direction.y,
+                    -direction.z
+                };
+
+                double dDotN = dotProduct(d,normal);
+                struct point R = {
+                    d.x - 2 * dDotN * normal.x,
+                    d.y - 2 * dDotN * normal.y,
+                    d.z - 2 * dDotN * normal.z,
+
+                };
+
+                double valueOfR = valueOfAVector(R);
+                R = {
+                    R.x/valueOfR,
+                    R.y/valueOfR,
+                    R.z/valueOfR
+                };
+
+                 //cout << "R : " << R.x << " " << R.y << " " << R.z << endl;
+                // calculate V
+
+                struct point V = {
+                    -(r->dir.x) ,
+                    -(r->dir.y) ,
+                    -(r->dir.z)
+                };
+
+                double valueOfV = valueOfAVector(V);
+                V = {
+                    V.x/valueOfV,
+                    V.y/valueOfV,
+                    V.z/valueOfV
+                };
+
+
+                 //cout << "V : " << V.x << " " << V.y << " " << V.z << endl;
+
+                // calculate diffuse component
+                double lambertComponent = max(dotProduct(direction, normal),0.0);
+                finalColor[0] = finalColor[0] + lights[m].color[0] * coEfficients[1] * lambertComponent * intersectionPointColor[0];
+                finalColor[1] = finalColor[1] + lights[m].color[1] * coEfficients[1] * lambertComponent * intersectionPointColor[1];
+                finalColor[2] = finalColor[2] + lights[m].color[2] * coEfficients[1] * lambertComponent * intersectionPointColor[2];
+
+                clipcolor(finalColor);
+                // calculate specular component
+                double phongComponent = max(pow(dotProduct(R,V),shine),0.0);
+                finalColor[0] = finalColor[0] + lights[m].color[0] * coEfficients[2] * phongComponent;
+                finalColor[1] = finalColor[1] + lights[m].color[1] * coEfficients[2] * phongComponent;
+                finalColor[2] = finalColor[2] + lights[m].color[2] * coEfficients[2] * phongComponent;
+
+                clipcolor(finalColor);
+            }
+
+
+        }
+
+        if(level >= recursionLevel){
+           return t;
+        }
+
+        struct point dNew = r->dir;
+
+        double dNewDotNormal = dotProduct(dNew,normal);
+        struct point reflectedDirection = {
+            dNew.x - 2 * dNewDotNormal * normal.x,
+            dNew.y - 2 * dNewDotNormal * normal.y,
+            dNew.z - 2 * dNewDotNormal * normal.z,
+
+        };
+
+        double valueOfReflected = valueOfAVector(reflectedDirection);
+        reflectedDirection = {
+            reflectedDirection.x/valueOfReflected ,
+            reflectedDirection.y/valueOfReflected ,
+            reflectedDirection.z/valueOfReflected
+        };
+
+
+        Ray * rReflected;
+        struct point startingPositionReflected = {
+            intersectionPoint.x + reflectedDirection.x * 0.0000000001,
+            intersectionPoint.y + reflectedDirection.y * 0.0000000001,
+            intersectionPoint.z + reflectedDirection.z * 0.0000000001
+        };
+        rReflected = new Ray(startingPositionReflected, reflectedDirection);
+        double tMinReflected = INT_MAX;
+        double tReflected;
+        double *colorReflected = new double[3];
+        // for each object, o in objects
+        Object *nearestIntersecting= NULL;
+        for(int obj = 0;  obj < objects.size(); obj++){
+            tReflected = objects[obj]->intersect(rReflected, colorReflected, 0);
+            if(tReflected >= 0 && tReflected < tMinReflected){
+                nearestIntersecting = objects[obj];
+                tMinReflected = tReflected;
+            }
+
+
+        }
+        if(nearestIntersecting){
+            tMinReflected = nearestIntersecting->intersect(rReflected, colorReflected,level+1);
+            finalColor[0] = finalColor[0] + colorReflected[0] * coEfficients[3] ;
+            finalColor[1] = finalColor[1] + colorReflected[1] * coEfficients[3] ;
+            finalColor[2] = finalColor[2] + colorReflected[2] * coEfficients[3] ;
+
+            clipcolor(finalColor);
+        }
+
+
+
+    }
+
+
+}
+
 
 
 
@@ -434,11 +725,13 @@ double Sphere::intersect(Ray *r, double *finalColor, int level){
     double discriminant = b*b - 4*a*c;
     if(discriminant < 0){
         t = -1.0;
+        return t;
     } else {
         double t1 = (-b + sqrt(discriminant))/(2.0 * a);
         double t2 = (-b - sqrt(discriminant))/(2.0 * a);
         if(t1 < 0 && t2 < 0){
             t= -1.0;
+            return t;
         } else if(t1 >= 0 && t2 >= 0){
            t = t2;
         } else if(t2 < 0){
@@ -466,6 +759,7 @@ double Sphere::intersect(Ray *r, double *finalColor, int level){
         for(int i = 0; i < 3; i++){
              finalColor[i] = intersectionPointColor[i] * coEfficients[0];
         }
+        clipcolor(finalColor);
         //cout << "final color : " << finalColor[0] << " " << finalColor[1] << " " << finalColor[2] << endl;
         //calculate normal at intersection point
         struct point normal = {
@@ -481,14 +775,11 @@ double Sphere::intersect(Ray *r, double *finalColor, int level){
             normal.y/normalVectorValue,
             normal.z/normalVectorValue
         };
-        //cout << "normal : " << normal.x << " " << normal.y << " " << normal.z << endl;
+
          for(int m = 0; m < lights.size(); m++){
-            //cout << "Light " << m+1 << endl;
             double tNew;
             double tMinNew;
 
-
-            // cast ray from eye to (curPixel-eye) direction
             struct point direction = {
                 lights[m].light_pos.x - intersectionPoint.x,
                 lights[m].light_pos.y - intersectionPoint.y,
@@ -551,9 +842,9 @@ double Sphere::intersect(Ray *r, double *finalColor, int level){
                 // calculate V
 
                 struct point V = {
-                    r->start.x - intersectionPoint.x,
-                    r->start.y - intersectionPoint.y,
-                    r->start.z - intersectionPoint.z
+                    -(r->dir.x) ,
+                    -(r->dir.y) ,
+                    -(r->dir.z)
                 };
 
                 double valueOfV = valueOfAVector(V);
@@ -572,58 +863,70 @@ double Sphere::intersect(Ray *r, double *finalColor, int level){
                 finalColor[1] = finalColor[1] + lights[m].color[1] * coEfficients[1] * lambertComponent * intersectionPointColor[1];
                 finalColor[2] = finalColor[2] + lights[m].color[2] * coEfficients[1] * lambertComponent * intersectionPointColor[2];
 
-
+                clipcolor(finalColor);
                 // calculate specular component
                 double phongComponent = max(pow(dotProduct(R,V),shine),0.0);
                 finalColor[0] = finalColor[0] + lights[m].color[0] * coEfficients[2] * phongComponent;
                 finalColor[1] = finalColor[1] + lights[m].color[1] * coEfficients[2] * phongComponent;
                 finalColor[2] = finalColor[2] + lights[m].color[2] * coEfficients[2] * phongComponent;
 
-
-
-                if(level >= recursionLevel){
-                   return t;
-                }
-                Ray * rReflected;
-                struct point startingPositionReflected = {
-                    intersectionPoint.x + R.x * 0.0000000001,
-                    intersectionPoint.y + R.y * 0.0000000001,
-                    intersectionPoint.z + R.z * 0.0000000001
-                };
-                rReflected = new Ray(startingPositionReflected, R);
-                double tMinReflected = INT_MAX;
-                double tReflected;
-                double *colorReflected = new double[3];
-                // for each object, o in objects
-                Object *nearestIntersecting= NULL;
-                for(int obj = 0;  obj < objects.size(); obj++){
-                    tReflected = objects[obj]->intersect(rReflected, colorReflected, 0);
-                    if(tReflected >= 0 && tReflected < tMinReflected){
-                        nearestIntersecting = objects[obj];
-                        tMinReflected = tReflected;
-                    }
-
-
-                }
-                if(nearestIntersecting){
-                    tMinReflected = nearestIntersecting->intersect(rReflected, colorReflected,level+1);
-                    finalColor[0] = finalColor[0] + colorReflected[0] * coEfficients[3] ;
-                    finalColor[1] = finalColor[1] + colorReflected[1] * coEfficients[3] ;
-                    finalColor[2] = finalColor[2] + colorReflected[2] * coEfficients[3] ;
-                }
-
-                if(finalColor[0] > 1) finalColor[0] = 1.0;
-                if(finalColor[0] < 0) finalColor[0] = 0.0;
-                if(finalColor[1] > 1) finalColor[1] = 1.0;
-                if(finalColor[1] < 0) finalColor[1] = 0.0;
-                if(finalColor[2] > 1) finalColor[2] = 1.0;
-                if(finalColor[2] < 0) finalColor[2] = 0.0;
+                clipcolor(finalColor);
             }
 
 
         }
 
-        //cout << "final color : " << finalColor[0] << " " << finalColor[1] << " " << finalColor[2] << endl;
+        if(level >= recursionLevel){
+           return t;
+        }
+
+        struct point dNew = r->dir;
+
+        double dNewDotNormal = dotProduct(dNew,normal);
+        struct point reflectedDirection = {
+            dNew.x - 2 * dNewDotNormal * normal.x,
+            dNew.y - 2 * dNewDotNormal * normal.y,
+            dNew.z - 2 * dNewDotNormal * normal.z,
+
+        };
+
+        double valueOfReflected = valueOfAVector(reflectedDirection);
+        reflectedDirection = {
+            reflectedDirection.x/valueOfReflected ,
+            reflectedDirection.y/valueOfReflected ,
+            reflectedDirection.z/valueOfReflected
+        };
+
+
+        Ray * rReflected;
+        struct point startingPositionReflected = {
+            intersectionPoint.x + reflectedDirection.x * 0.0000000001,
+            intersectionPoint.y + reflectedDirection.y * 0.0000000001,
+            intersectionPoint.z + reflectedDirection.z * 0.0000000001
+        };
+        rReflected = new Ray(startingPositionReflected, reflectedDirection);
+        double tMinReflected = INT_MAX;
+        double tReflected;
+        double *colorReflected = new double[3];
+        // for each object, o in objects
+        Object *nearestIntersecting= NULL;
+        for(int obj = 0;  obj < objects.size(); obj++){
+            tReflected = objects[obj]->intersect(rReflected, colorReflected, 0);
+            if(tReflected >= 0 && tReflected < tMinReflected){
+                nearestIntersecting = objects[obj];
+                tMinReflected = tReflected;
+            }
+
+
+        }
+        if(nearestIntersecting){
+            tMinReflected = nearestIntersecting->intersect(rReflected, colorReflected,level+1);
+            finalColor[0] = finalColor[0] + colorReflected[0] * coEfficients[3] ;
+            finalColor[1] = finalColor[1] + colorReflected[1] * coEfficients[3] ;
+            finalColor[2] = finalColor[2] + colorReflected[2] * coEfficients[3] ;
+
+            clipcolor(finalColor);
+        }
 
 
     }
@@ -706,9 +1009,9 @@ void Floor::draw(){
     for(int j = 0; j < abs(reference_point.y) * 2; j+=length){
         for(int i = 0; i < abs(reference_point.x) * 2; i+=length){
             if((i/20 + j/20) % 2 == 0){
-                glColor3f(0,0,0);
-            } else {
                 glColor3f(1,1,1);
+            } else {
+                glColor3f(0,0,0);
             }
 
             glBegin(GL_QUADS);{
@@ -727,7 +1030,244 @@ void Floor::draw(){
 	glTranslatef(-reference_point.x, -reference_point.y, -reference_point.z);
 }
 
-double Floor::intersect(Ray *r, double *color, int level){
+double Floor::intersect(Ray *r, double *finalColor, int level){
+    //cout << "floor intersect called" << endl;
+    double t;
+    struct point R0 = {
+        r->start.x - reference_point.x,
+        r->start.y - reference_point.y,
+        r->start.z - reference_point.z
+
+    };
+    struct point normal = {
+        0,
+        0,
+        1
+    };
+    double denominator = dotProduct(normal, r->dir);
+    if (denominator != 0) {
+
+        t = - dotProduct(R0, normal) / denominator;
+
+    } else {
+        t = -1.0;
+        return t;
+    }
+
+
+    if (level == 0){
+        return t;
+    }
+    else {
+            //cout << "called" << endl;
+        struct point intersectionPoint= {
+            r->start.x + r->dir.x * t,
+            r->start.y + r->dir.y * t,
+            r->start.z + r->dir.z * t
+        };
+
+        struct point newPoint = {
+            intersectionPoint.x - reference_point.x,
+            intersectionPoint.y - reference_point.y,
+            intersectionPoint.z - reference_point.z
+        };
+
+       int newI = newPoint.x;
+       int newJ = newPoint.y;
+        //cout << newI << " " << newJ << endl;
+        if(newI >= 1000 || newJ >= 1000 || newI < 0 || newJ < 0){
+            return -1.0;
+        }
+        //cout << "Intersection Point : " << intersectionPoint.x << " " << intersectionPoint.y << " " << intersectionPoint.z << endl;
+        for(int j = 0; j < abs(reference_point.y) * 2; j+=length){
+            for(int i = 0; i < abs(reference_point.x) * 2; i+=length){
+
+                if((newI>=i && newI<i+length) && (newJ >= j && newJ < j+length)){
+                    if((i/20 + j/20) % 2 == 0){
+                        color[0] = 1;
+                        color[1] = 1;
+                        color[2] = 1;
+                    } else {
+                        color[0] = 0;
+                        color[1] = 0;
+                        color[2] = 0;
+                    }
+
+                    break;
+                }
+
+            }
+        }
+        double *intersectionPointColor;
+        intersectionPointColor = new double[3];
+        for(int i = 0; i < 3; i++){
+            intersectionPointColor[i] = color[i];
+        }
+
+
+        for(int i = 0; i < 3; i++){
+             finalColor[i] = intersectionPointColor[i] * coEfficients[0];
+        }
+        clipcolor(finalColor);
+        //cout << "final color : " << finalColor[0] << " " << finalColor[1] << " " << finalColor[2] << endl;
+        //calculate normal at intersection point
+
+         for(int m = 0; m < lights.size(); m++){
+            double tNew;
+            double tMinNew;
+
+            struct point direction = {
+                lights[m].light_pos.x - intersectionPoint.x,
+                lights[m].light_pos.y - intersectionPoint.y,
+                lights[m].light_pos.z - intersectionPoint.z,
+            };
+
+            double valueOfDirection = valueOfAVector(direction);
+
+            direction ={
+                direction.x/valueOfDirection,
+                direction.y/valueOfDirection,
+                direction.z/valueOfDirection
+            };
+            //cout << "direction : " << direction.x << " " << direction.y << " " << direction.z << endl;
+            Ray * rNew;
+            struct point startingPosition = {
+                intersectionPoint.x + direction.x * 0.0000000001,
+                intersectionPoint.y + direction.y * 0.0000000001,
+                intersectionPoint.z + direction.z * 0.0000000001
+            };
+            rNew = new Ray(startingPosition, direction);
+
+
+            tMinNew = INT_MAX;
+            double *colorNew = new double[3];
+            // for each object, o in objects
+            for(int k = 0; k < objects.size(); k++){
+                tNew = objects[k]->intersect(rNew, colorNew, 0);
+                if(tNew >= 0 && tNew < tMinNew){
+                    tMinNew = tNew;
+                }
+
+
+            }
+
+            if(tMinNew >= t){
+                //calculate R  // r=d−2(d⋅n)n
+                struct point d = {
+                    -direction.x,
+                    -direction.y,
+                    -direction.z
+                };
+
+                double dDotN = dotProduct(d,normal);
+                struct point R = {
+                    d.x - 2 * dDotN * normal.x,
+                    d.y - 2 * dDotN * normal.y,
+                    d.z - 2 * dDotN * normal.z,
+
+                };
+
+                double valueOfR = valueOfAVector(R);
+                R = {
+                    R.x/valueOfR,
+                    R.y/valueOfR,
+                    R.z/valueOfR
+                };
+
+                 //cout << "R : " << R.x << " " << R.y << " " << R.z << endl;
+                // calculate V
+
+                struct point V = {
+                    -(r->dir.x) ,
+                    -(r->dir.y) ,
+                    -(r->dir.z)
+                };
+
+                double valueOfV = valueOfAVector(V);
+                V = {
+                    V.x/valueOfV,
+                    V.y/valueOfV,
+                    V.z/valueOfV
+                };
+
+
+                 //cout << "V : " << V.x << " " << V.y << " " << V.z << endl;
+
+                // calculate diffuse component
+                double lambertComponent = max(dotProduct(direction, normal),0.0);
+                finalColor[0] = finalColor[0] + lights[m].color[0] * coEfficients[1] * lambertComponent * intersectionPointColor[0];
+                finalColor[1] = finalColor[1] + lights[m].color[1] * coEfficients[1] * lambertComponent * intersectionPointColor[1];
+                finalColor[2] = finalColor[2] + lights[m].color[2] * coEfficients[1] * lambertComponent * intersectionPointColor[2];
+
+                clipcolor(finalColor);
+                // calculate specular component
+                double phongComponent = max(pow(dotProduct(R,V),shine),0.0);
+                finalColor[0] = finalColor[0] + lights[m].color[0] * coEfficients[2] * phongComponent;
+                finalColor[1] = finalColor[1] + lights[m].color[1] * coEfficients[2] * phongComponent;
+                finalColor[2] = finalColor[2] + lights[m].color[2] * coEfficients[2] * phongComponent;
+
+                clipcolor(finalColor);
+            }
+
+
+        }
+
+        if(level >= recursionLevel){
+           return t;
+        }
+
+        struct point dNew = r->dir;
+
+        double dNewDotNormal = dotProduct(dNew,normal);
+        struct point reflectedDirection = {
+            dNew.x - 2 * dNewDotNormal * normal.x,
+            dNew.y - 2 * dNewDotNormal * normal.y,
+            dNew.z - 2 * dNewDotNormal * normal.z,
+
+        };
+
+        double valueOfReflected = valueOfAVector(reflectedDirection);
+        reflectedDirection = {
+            reflectedDirection.x/valueOfReflected ,
+            reflectedDirection.y/valueOfReflected ,
+            reflectedDirection.z/valueOfReflected
+        };
+
+
+        Ray * rReflected;
+        struct point startingPositionReflected = {
+            intersectionPoint.x + reflectedDirection.x * 0.0000000001,
+            intersectionPoint.y + reflectedDirection.y * 0.0000000001,
+            intersectionPoint.z + reflectedDirection.z * 0.0000000001
+        };
+        rReflected = new Ray(startingPositionReflected, reflectedDirection);
+        double tMinReflected = INT_MAX;
+        double tReflected;
+        double *colorReflected = new double[3];
+        // for each object, o in objects
+        Object *nearestIntersecting= NULL;
+        for(int obj = 0;  obj < objects.size(); obj++){
+            tReflected = objects[obj]->intersect(rReflected, colorReflected, 0);
+            if(tReflected >= 0 && tReflected < tMinReflected){
+                nearestIntersecting = objects[obj];
+                tMinReflected = tReflected;
+            }
+
+
+        }
+        if(nearestIntersecting){
+            tMinReflected = nearestIntersecting->intersect(rReflected, colorReflected,level+1);
+            finalColor[0] = finalColor[0] + colorReflected[0] * coEfficients[3] ;
+            finalColor[1] = finalColor[1] + colorReflected[1] * coEfficients[3] ;
+            finalColor[2] = finalColor[2] + colorReflected[2] * coEfficients[3] ;
+
+            clipcolor(finalColor);
+        }
+
+
+    }
+
+
 }
 
 
