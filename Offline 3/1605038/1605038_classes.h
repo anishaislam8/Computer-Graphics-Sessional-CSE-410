@@ -56,6 +56,18 @@ public:
     }
 };
 
+
+
+
+
+
+
+
+
+
+
+
+
 /***********************Object********************/
 
 class Object {
@@ -89,6 +101,20 @@ public:
 };
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /***********************Light********************/
 
 class Light{
@@ -119,6 +145,18 @@ void Light::draw(){
 
 vector <Object*> objects;
 vector <Light> lights;
+
+
+
+
+
+
+
+
+
+
+
+
 
 /***********************Triangle********************/
 
@@ -402,6 +440,21 @@ double Triangle::intersect(Ray *r, double *finalColor, int level){
     }
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 /***********************General Shapes********************/
@@ -693,6 +746,22 @@ double General::intersect(Ray *r, double *finalColor, int level){
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /***********************Sphere********************/
 
 class Sphere : public Object {
@@ -732,10 +801,12 @@ double Sphere::intersect(Ray *r, double *finalColor, int level){
         if(t1 < 0 && t2 < 0){
             t= -1.0;
             return t;
-        } else if(t1 >= 0 && t2 >= 0){
+        } else if(t2 >= 0){
            t = t2;
-        } else if(t2 < 0){
+        } else if(t1 >= 0){
             t = t1;
+        } else {
+            return -1.0;
         }
     }
 
@@ -992,6 +1063,22 @@ void Sphere::draw(){
 
     glTranslatef(-reference_point.x, -reference_point.y, -reference_point.z);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
