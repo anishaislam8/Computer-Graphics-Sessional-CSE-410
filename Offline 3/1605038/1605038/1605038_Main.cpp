@@ -13,7 +13,7 @@
 #define pi (2*acos(0.0))
 #include <vector>
 #include "1605038_classes.h"
-#include "1605038_bitmap_image.hpp"
+#include "bitmap_image.hpp"
 
 
 using namespace std;

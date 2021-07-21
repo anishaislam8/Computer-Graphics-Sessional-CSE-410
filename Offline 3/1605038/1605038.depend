@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1625163570 source:d:\academics\4-1\lab\computer-graphics-sessional-cse-410\offline 3\1605038\main.cpp
+1626001160 source:d:\academics\4-1\lab\computer-graphics-sessional-cse-410\offline 3\1605038\main.cpp
 	<windows.h>
 	<GLUT/glut.h>
 	<GL/glut.h>
@@ -11,7 +11,7 @@
 	<math.h>
 	<vector>
 	"1605038_classes.h"
-	"bitmap_image.hpp"
+	"1605038_bitmap_image.hpp"
 
 1301111162 c:\program files (x86)\codeblocks\mingw\include\windows.h
 	<winresrc.h>
@@ -231,13 +231,23 @@
 1341006774 c:\program files (x86)\codeblocks\mingw\include\math.h
 	<_mingw.h>
 
-1625253739 d:\academics\4-1\lab\computer-graphics-sessional-cse-410\offline 3\1605038\1605038_classes.h
+1626001086 d:\academics\4-1\lab\computer-graphics-sessional-cse-410\offline 3\1605038\1605038_classes.h
 	<GL/glut.h>
 	<vector>
 	<math.h>
 	<iostream>
 
 1623270729 d:\academics\4-1\lab\computer-graphics-sessional-cse-410\offline 3\1605038\bitmap_image.hpp
+	<algorithm>
+	<cmath>
+	<cstdlib>
+	<fstream>
+	<iostream>
+	<iterator>
+	<limits>
+	<string>
+
+1623270729 d:\academics\4-1\lab\computer-graphics-sessional-cse-410\offline 3\1605038\1605038_bitmap_image.hpp
 	<algorithm>
 	<cmath>
 	<cstdlib>
